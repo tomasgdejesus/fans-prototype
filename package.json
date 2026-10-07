@@ -1,0 +1,9 @@
+{
+  "name": "fans",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --dir apps/platform run dev",
+    "build": "pnpm --dir apps/platform run build",
+    "deploy": "pnpm --dir apps/platform run deploy"
+  }
+}
