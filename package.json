@@ -2,8 +2,11 @@
   "name": "fans",
   "private": true,
   "scripts": {
-    "dev": "pnpm --dir apps/platform run dev",
-    "build": "pnpm --dir apps/platform run build",
-    "deploy": "pnpm --dir apps/platform run deploy"
+    "dev": "pnpm --filter @fans/platform run dev",
+    "build": "pnpm --filter @fans/platform run build",
+    "deploy": "pnpm --filter @fans/platform run deploy",
+    "typecheck": "pnpm --filter @fans/platform run typecheck",
+    "lint": "pnpm --filter @fans/platform run lint",
+    "check": "pnpm --filter @fans/platform run check"
   }
 }
