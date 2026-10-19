@@ -16,4 +16,4 @@ The home page checks `/api/health` through Hono RPC and TanStack Query. Page fol
 
 Authentication, authorization, course operations, and database connections remain deferred. Dashboard pages are public placeholders until authentication is implemented.
 
-The Drizzle schema uses SQLite SQL defaults for UUIDs and initial timestamps. `updated_at` does not change automatically on update. Generation creates SQL files; the external database process remains responsible for applying reviewed changes.
+Table IDs use application-generated UUID v7 values from the `uuid` package through Drizzle `$defaultFn` callbacks. Certificate verification codes use random UUID v4 values through the same package. External SQL writers must supply their own IDs and verification codes. Initial timestamps retain SQLite SQL defaults; `updated_at` does not change automatically on update. Generation creates SQL files; the external database process remains responsible for applying reviewed changes.

@@ -144,7 +144,11 @@ Keep Drizzle tables and database row types in the backend. API inputs and respon
 
 Keep provider-specific connection code separate from table definitions. D1 integration can later create the Drizzle client from a Worker database binding. No database client or adapter is required for schema generation.
 
-UUIDs use SQLite SQL `DEFAULT` expressions evaluated by the database when an insert omits the value. Initial timestamps also use SQL defaults. `updated_at` does not update automatically; update statements or a future database trigger must maintain it if needed. Better Auth must eventually set `advanced.database.generateId: false` to defer its IDs to the database.
+Table IDs use UUID v7 values generated in the backend with `uuid` and Drizzle `$defaultFn(() => uuidv7())`. These callbacks run on Drizzle inserts when a value is omitted; they do not create SQL defaults. Direct SQL writers and external scripts must supply IDs explicitly. Certificate verification codes remain random UUID v4 values, also generated through an application callback.
+
+Initial timestamps retain their SQLite SQL defaults. `updated_at` does not update automatically; update statements or a future database trigger must maintain it if needed. When Better Auth is configured, import `v7 as uuidv7` from `uuid` and set `advanced.database.generateId: () => uuidv7()` so its IDs follow the same convention.
+
+Existing UUID v4 IDs remain valid and do not need rewriting. If the earlier SQL UUID defaults were applied, coordinate their removal with the external database process. If no SQL UUID defaults were applied, adding `$defaultFn` alone does not require a SQL migration.
 
 **Drizzle Kit** is development tooling. A generation-only `drizzle.config.ts` belongs at the platform app root and specifies the dialect, schema path, and output directory without database credentials.
 

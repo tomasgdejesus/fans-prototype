@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
@@ -8,14 +9,7 @@ const userStatuses = ["active", "suspended", "archived"] as const;
 // These are base Better Auth tables plus the two FANS user fields below.
 // Verify/regenerate them against your final Better Auth config and plugins.
 export const user = sqliteTable("user", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   name: text("display_name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
@@ -33,14 +27,7 @@ export const user = sqliteTable("user", {
 ]);
 
 export const session = sqliteTable("session", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   token: text("token").notNull().unique(),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
@@ -53,14 +40,7 @@ export const session = sqliteTable("session", {
 }, (t) => [index("session_user_idx").on(t.userId)]);
 
 export const account = sqliteTable("account", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
@@ -81,14 +61,7 @@ export const account = sqliteTable("account", {
 ]);
 
 export const verification = sqliteTable("verification", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),

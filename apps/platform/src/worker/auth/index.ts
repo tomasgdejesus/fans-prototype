@@ -1,3 +1,3 @@
 // Add Better Auth after choosing and configuring the database connection.
-// Set advanced.database.generateId to false to use database-generated IDs.
+// Use advanced.database.generateId: () => uuidv7() with uuid's v7 import.
 export {};

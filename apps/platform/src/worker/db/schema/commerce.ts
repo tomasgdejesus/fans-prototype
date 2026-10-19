@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
 import { check, foreignKey, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { user } from "./auth.ts";
@@ -8,14 +9,7 @@ const productStatuses = ["draft", "active", "archived"] as const;
 const orderStatuses = ["draft", "pending", "confirmed", "completed", "canceled"] as const;
 
 export const products = sqliteTable("products", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   sku: text("sku").notNull().unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
@@ -31,14 +25,7 @@ export const products = sqliteTable("products", {
 ]);
 
 export const productPrices = sqliteTable("product_prices", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   currency: text("currency").notNull(),
   unitAmount: integer("unit_amount").notNull(),
@@ -59,14 +46,7 @@ export const productPrices = sqliteTable("product_prices", {
 ]);
 
 export const orders = sqliteTable("orders", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   orderNumber: text("order_number").notNull().unique(),
   placedByUserId: text("placed_by_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   purchasingOrganizationId: text("purchasing_organization_id").references(() => organizations.id, { onDelete: "restrict" }),
@@ -99,14 +79,7 @@ export const orders = sqliteTable("orders", {
 ]);
 
 export const orderItems = sqliteTable("order_items", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   productPriceId: text("product_price_id"),

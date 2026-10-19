@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { user } from "./auth.ts";
@@ -9,14 +10,7 @@ const eventStatuses = ["received", "processing", "processed", "failed"] as const
 const environments = ["test", "live"] as const;
 
 export const payments = sqliteTable("payments", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
   provider: text("provider").notNull(),
   providerAccountReference: text("provider_account_reference").notNull(),
@@ -46,14 +40,7 @@ export const payments = sqliteTable("payments", {
 ]);
 
 export const refunds = sqliteTable("refunds", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   paymentId: text("payment_id").notNull().references(() => payments.id, { onDelete: "restrict" }),
   providerRefundId: text("provider_refund_id"),
   idempotencyKey: text("idempotency_key").notNull(),
@@ -79,14 +66,7 @@ export const refunds = sqliteTable("refunds", {
 ]);
 
 export const refundItems = sqliteTable("refund_items", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   refundId: text("refund_id").notNull().references(() => refunds.id, { onDelete: "restrict" }),
   orderItemId: text("order_item_id").notNull().references(() => orderItems.id, { onDelete: "restrict" }),
   amount: integer("amount").notNull(),
@@ -103,14 +83,7 @@ export const refundItems = sqliteTable("refund_items", {
 ]);
 
 export const paymentEvents = sqliteTable("payment_events", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   provider: text("provider").notNull(),
   providerAccountReference: text("provider_account_reference").notNull(),
   environment: text("environment", { enum: environments }).notNull(),

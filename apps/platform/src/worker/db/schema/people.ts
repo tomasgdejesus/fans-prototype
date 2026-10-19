@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { user } from "./auth.ts";
@@ -7,14 +8,7 @@ const membershipStatuses = ["active", "inactive"] as const;
 const organizationRoles = ["owner", "manager", "billing", "viewer"] as const;
 
 export const learners = sqliteTable("learners", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   userId: text("user_id").unique().references(() => user.id, { onDelete: "restrict" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
@@ -27,14 +21,7 @@ export const learners = sqliteTable("learners", {
 }, (t) => [check("learners_status_check", sql`${t.status} IN ('active', 'archived')`)]);
 
 export const organizations = sqliteTable("organizations", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   name: text("name").notNull(),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
@@ -46,14 +33,7 @@ export const organizations = sqliteTable("organizations", {
 }, (t) => [check("organizations_status_check", sql`${t.status} IN ('active', 'archived')`)]);
 
 export const organizationMemberships = sqliteTable("organization_memberships", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   role: text("role", { enum: organizationRoles }).notNull(),
@@ -70,14 +50,7 @@ export const organizationMemberships = sqliteTable("organization_memberships", {
 ]);
 
 export const organizationLearners = sqliteTable("organization_learners", {
-  id: text("id").primaryKey().notNull().default(sql`(lower(
-      hex(randomblob(4)) || '-' ||
-      hex(randomblob(2)) || '-4' ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      substr('89ab', (random() & 3) + 1, 1) ||
-      substr(hex(randomblob(2)), 2) || '-' ||
-      hex(randomblob(6))
-    ))`),
+  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
   organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
   learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
   employeeReference: text("employee_reference"),
