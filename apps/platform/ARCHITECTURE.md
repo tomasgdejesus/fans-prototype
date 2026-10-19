@@ -2,6 +2,101 @@
 
 The FANS platform uses a React single-page application and a Hono API, developed together with Vite and deployed through Cloudflare Workers. The database provider remains undecided.
 
+## Intended folder structure
+
+```text
+apps/platform/
+├── README.md
+├── ARCHITECTURE.md
+├── package.json
+├── index.html
+├── vite.config.ts
+├── wrangler.json
+├── drizzle.config.ts
+├── eslint.config.js
+├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.worker.json
+├── tsconfig.node.json
+├── worker-configuration.d.ts
+├── .env.example
+├── .dev.vars.example
+├── public/                       # Public static assets
+├── drizzle/                      # Generated SQL migrations and snapshots
+├── docs/                         # App-specific guides
+└── src/
+    ├── react-app/
+    │   ├── main.tsx
+    │   ├── index.css
+    │   ├── assets/
+    │   ├── app/
+    │   │   ├── router.tsx         # Register URLs, pages, layouts, and guards
+    │   │   └── providers.tsx      # App-wide providers
+    │   ├── routes/               # Page folders follow URL paths
+    │   │   ├── page.tsx          # /
+    │   │   ├── not-found.tsx
+    │   │   ├── login/
+    │   │   │   └── page.tsx
+    │   │   ├── register/
+    │   │   │   └── page.tsx
+    │   │   ├── forgot-password/
+    │   │   │   └── page.tsx
+    │   │   ├── reset-password/
+    │   │   │   └── page.tsx
+    │   │   └── dashboard/
+    │   │       ├── layout.tsx     # Dashboard navigation and child outlet
+    │   │       ├── page.tsx       # /dashboard
+    │   │       ├── courses/
+    │   │       │   ├── page.tsx
+    │   │       │   └── [courseId]/
+    │   │       │       └── page.tsx
+    │   │       ├── organizations/
+    │   │       │   ├── page.tsx
+    │   │       │   └── [organizationId]/
+    │   │       │       └── page.tsx
+    │   │       ├── orders/
+    │   │       │   └── page.tsx
+    │   │       └── settings/
+    │   │           └── page.tsx
+    │   ├── components/           # Reusable UI/etc. components reused across routes
+    │   │   ├── courses/
+    │   ├── features/             # Domain code reused across routes
+    │   │   └── courses/
+    │   │       ├── components/
+    │   │       ├── api.ts        # Typed API calls
+    │   │       └── queries.ts    # Query keys, options, mutations
+    │   └── lib/
+    │       ├── api-client.ts
+    │       ├── auth-client.ts
+    │       └── query-client.ts
+    ├── worker/
+    │   ├── index.ts              # Worker entry point
+    │   ├── app.ts                # Hono app composition
+    │   ├── env.ts                # Hono bindings and context types
+    │   ├── auth/
+    │   │   └── index.ts          # Better Auth server configuration
+    │   ├── middleware/
+    │   │   ├── session.ts
+    │   │   └── authorization.ts
+    │   ├── features/
+    │   │   └── courses/          # Example feature
+    │   │       ├── routes.ts
+    │   │       ├── service.ts
+    │   │       └── queries.ts
+    │   └── db/
+    │       └── schema/
+    │           ├── index.ts      # Exports all table definitions
+    │           ├── auth.ts
+    │           ├── people.ts
+    │           ├── training.ts
+    │           ├── commerce.ts
+    │           └── payments.ts
+    └── shared/
+        ├── contracts/
+        │   └── courses.ts        # Shared Zod request schemas
+        └── constants/
+```
+
 ## Frontend: src/react-app/
 
 - **React and Vite:** application UI and frontend build tooling.
