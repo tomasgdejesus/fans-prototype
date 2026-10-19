@@ -15,11 +15,13 @@ A pnpm workspace using React, TypeScript, Vite, and Tailwind CSS for the fronten
 
 ## Setup
 
-Use Node.js 22.12+ and pnpm 10.26+ within the pnpm 10 release line.
+Use Node.js 22.22+ and the pnpm version pinned in the root `package.json`. When initially adopting this scaffold, pin the pnpm version your team uses:
 
 ```bash
-npm install --global pnpm@10
+pnpm pkg set packageManager="pnpm@$(pnpm --version)"
 ```
+
+Commit that change with the lockfile.
 
 After cloning or extracting the repository, run from its root:
 

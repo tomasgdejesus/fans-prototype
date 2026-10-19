@@ -8,5 +8,9 @@
     "typecheck": "pnpm --filter @fans/platform run typecheck",
     "lint": "pnpm --filter @fans/platform run lint",
     "check": "pnpm --filter @fans/platform run check"
-  }
+  },
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "packageManager": "pnpm@12.3.4"
 }

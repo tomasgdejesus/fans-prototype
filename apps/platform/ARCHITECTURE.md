@@ -59,7 +59,7 @@ apps/platform/
     │   │       └── settings/
     │   │           └── page.tsx
     │   ├── components/           # Reusable UI/etc. components reused across routes
-    │   │   ├── courses/
+    │   │   └── ui/
     │   ├── features/             # Domain code reused across routes
     │   │   └── courses/
     │   │       ├── components/
@@ -107,7 +107,9 @@ apps/platform/
 - **Better Auth client:** browser authentication flows.
 - **Hono RPC client:** typed requests to the backend API.
 
-Organize domain-specific pages, components, and query code under `features/<feature>/`. Keep reusable UI components under `components/` and app-wide clients under `lib/`.
+Keep pages under `routes/` following URL paths, and register them explicitly in `app/router.tsx`. Folder names such as `[courseId]` are an organizational convention; route definitions use `:courseId`. Keep components used only by a page beside that page. Put domain components and API/query code reused across routes under `features/<feature>/`. Put generic UI under `components/` and app-wide clients under `lib/`.
+
+The current scaffold wires navigation, TanStack Query, and a typed `/api/health` endpoint. Authentication and database connections remain deferred; dashboard pages are public placeholders.
 
 ## Backend: src/worker/
 
@@ -140,7 +142,9 @@ Keep Drizzle tables and database row types in the backend. API inputs and respon
 
 **Drizzle ORM** provides typed table definitions and queries. SQLite is the intended dialect for straightforward future D1 integration; choosing SQLite does not select a hosting provider.
 
-Keep provider-specific connection code separate from table definitions. D1 integration can later create the Drizzle client from a Worker database binding.
+Keep provider-specific connection code separate from table definitions. D1 integration can later create the Drizzle client from a Worker database binding. No database client or adapter is required for schema generation.
+
+UUIDs use SQLite SQL `DEFAULT` expressions evaluated by the database when an insert omits the value. Initial timestamps also use SQL defaults. `updated_at` does not update automatically; update statements or a future database trigger must maintain it if needed. Better Auth must eventually set `advanced.database.generateId: false` to defer its IDs to the database.
 
 **Drizzle Kit** is development tooling. A generation-only `drizzle.config.ts` belongs at the platform app root and specifies the dialect, schema path, and output directory without database credentials.
 

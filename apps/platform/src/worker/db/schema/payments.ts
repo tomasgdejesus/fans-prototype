@@ -9,7 +9,14 @@ const eventStatuses = ["received", "processing", "processed", "failed"] as const
 const environments = ["test", "live"] as const;
 
 export const payments = sqliteTable("payments", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
   provider: text("provider").notNull(),
   providerAccountReference: text("provider_account_reference").notNull(),
@@ -25,7 +32,7 @@ export const payments = sqliteTable("payments", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("payments_provider_payment_unique").on(t.provider, t.providerAccountReference, t.providerPaymentId),
   uniqueIndex("payments_provider_checkout_unique").on(t.provider, t.providerAccountReference, t.providerCheckoutId),
@@ -39,7 +46,14 @@ export const payments = sqliteTable("payments", {
 ]);
 
 export const refunds = sqliteTable("refunds", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   paymentId: text("payment_id").notNull().references(() => payments.id, { onDelete: "restrict" }),
   providerRefundId: text("provider_refund_id"),
   idempotencyKey: text("idempotency_key").notNull(),
@@ -53,7 +67,7 @@ export const refunds = sqliteTable("refunds", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("refunds_payment_provider_refund_unique").on(t.paymentId, t.providerRefundId),
   uniqueIndex("refunds_payment_idempotency_unique").on(t.paymentId, t.idempotencyKey),
@@ -65,7 +79,14 @@ export const refunds = sqliteTable("refunds", {
 ]);
 
 export const refundItems = sqliteTable("refund_items", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   refundId: text("refund_id").notNull().references(() => refunds.id, { onDelete: "restrict" }),
   orderItemId: text("order_item_id").notNull().references(() => orderItems.id, { onDelete: "restrict" }),
   amount: integer("amount").notNull(),
@@ -73,7 +94,7 @@ export const refundItems = sqliteTable("refund_items", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("refund_items_refund_item_unique").on(t.refundId, t.orderItemId),
   index("refund_items_order_item_idx").on(t.orderItemId),
@@ -82,7 +103,14 @@ export const refundItems = sqliteTable("refund_items", {
 ]);
 
 export const paymentEvents = sqliteTable("payment_events", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   provider: text("provider").notNull(),
   providerAccountReference: text("provider_account_reference").notNull(),
   environment: text("environment", { enum: environments }).notNull(),
@@ -99,7 +127,7 @@ export const paymentEvents = sqliteTable("payment_events", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("payment_events_provider_event_unique").on(t.provider, t.providerAccountReference, t.environment, t.providerEventId),
   index("payment_events_payment_idx").on(t.paymentId),

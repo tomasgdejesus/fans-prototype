@@ -7,7 +7,14 @@ const courseStatuses = ["draft", "active", "archived"] as const;
 const enrollmentStatuses = ["not_started", "in_progress", "completed", "failed", "withdrawn", "expired", "revoked"] as const;
 
 export const courses = sqliteTable("courses", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   code: text("code").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -15,12 +22,19 @@ export const courses = sqliteTable("courses", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [check("courses_status_check", sql`${t.status} IN ('draft', 'active', 'archived')`)]);
 
 // This follows the current draft: course_id, without a course-version table.
 export const enrollments = sqliteTable("enrollments", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
   courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "restrict" }),
   orderItemId: text("order_item_id").references(() => orderItems.id, { onDelete: "restrict" }),
@@ -32,7 +46,7 @@ export const enrollments = sqliteTable("enrollments", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("enrollments_id_learner_unique").on(t.id, t.learnerId),
   index("enrollments_learner_idx").on(t.learnerId),
@@ -46,7 +60,14 @@ export const enrollments = sqliteTable("enrollments", {
 ]);
 
 export const certificates = sqliteTable("certificates", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   certificateNumber: text("certificate_number").notNull().unique(),
   learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
   enrollmentId: text("enrollment_id").notNull(),
@@ -56,13 +77,20 @@ export const certificates = sqliteTable("certificates", {
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
   revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
   revocationReason: text("revocation_reason"),
-  verificationCode: text("verification_code").notNull().unique().$defaultFn(() => crypto.randomUUID()),
+  verificationCode: text("verification_code").notNull().unique().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   documentReference: text("document_reference"),
   supersedesCertificateId: text("supersedes_certificate_id").references((): AnySQLiteColumn => certificates.id, { onDelete: "restrict" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   foreignKey({ name: "certificates_enrollment_learner_fk", columns: [t.enrollmentId, t.learnerId], foreignColumns: [enrollments.id, enrollments.learnerId] }).onDelete("restrict"),
   index("certificates_learner_idx").on(t.learnerId),

@@ -8,7 +8,14 @@ const productStatuses = ["draft", "active", "archived"] as const;
 const orderStatuses = ["draft", "pending", "confirmed", "completed", "canceled"] as const;
 
 export const products = sqliteTable("products", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   sku: text("sku").notNull().unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
@@ -17,14 +24,21 @@ export const products = sqliteTable("products", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   check("products_type_check", sql`${t.productType} IN ('course_access', 'course_package')`),
   check("products_status_check", sql`${t.status} IN ('draft', 'active', 'archived')`),
 ]);
 
 export const productPrices = sqliteTable("product_prices", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   currency: text("currency").notNull(),
   unitAmount: integer("unit_amount").notNull(),
@@ -34,7 +48,7 @@ export const productPrices = sqliteTable("product_prices", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("product_prices_id_product_unique").on(t.id, t.productId),
   index("product_prices_product_idx").on(t.productId),
@@ -45,7 +59,14 @@ export const productPrices = sqliteTable("product_prices", {
 ]);
 
 export const orders = sqliteTable("orders", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   orderNumber: text("order_number").notNull().unique(),
   placedByUserId: text("placed_by_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   purchasingOrganizationId: text("purchasing_organization_id").references(() => organizations.id, { onDelete: "restrict" }),
@@ -62,7 +83,7 @@ export const orders = sqliteTable("orders", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   index("orders_user_idx").on(t.placedByUserId),
   index("orders_organization_idx").on(t.purchasingOrganizationId),
@@ -78,7 +99,14 @@ export const orders = sqliteTable("orders", {
 ]);
 
 export const orderItems = sqliteTable("order_items", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   productPriceId: text("product_price_id"),
@@ -93,7 +121,7 @@ export const orderItems = sqliteTable("order_items", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   foreignKey({ name: "order_items_price_product_fk", columns: [t.productPriceId, t.productId], foreignColumns: [productPrices.id, productPrices.productId] }).onDelete("restrict"),
   index("order_items_order_idx").on(t.orderId),

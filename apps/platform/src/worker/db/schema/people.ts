@@ -7,7 +7,14 @@ const membershipStatuses = ["active", "inactive"] as const;
 const organizationRoles = ["owner", "manager", "billing", "viewer"] as const;
 
 export const learners = sqliteTable("learners", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   userId: text("user_id").unique().references(() => user.id, { onDelete: "restrict" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
@@ -16,11 +23,18 @@ export const learners = sqliteTable("learners", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [check("learners_status_check", sql`${t.status} IN ('active', 'archived')`)]);
 
 export const organizations = sqliteTable("organizations", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   name: text("name").notNull(),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
@@ -28,11 +42,18 @@ export const organizations = sqliteTable("organizations", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [check("organizations_status_check", sql`${t.status} IN ('active', 'archived')`)]);
 
 export const organizationMemberships = sqliteTable("organization_memberships", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
   role: text("role", { enum: organizationRoles }).notNull(),
@@ -40,7 +61,7 @@ export const organizationMemberships = sqliteTable("organization_memberships", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("organization_memberships_pair_unique").on(t.organizationId, t.userId),
   index("organization_memberships_user_idx").on(t.userId),
@@ -49,7 +70,14 @@ export const organizationMemberships = sqliteTable("organization_memberships", {
 ]);
 
 export const organizationLearners = sqliteTable("organization_learners", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => crypto.randomUUID()),
+  id: text("id").primaryKey().notNull().default(sql`(lower(
+      hex(randomblob(4)) || '-' ||
+      hex(randomblob(2)) || '-4' ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      substr('89ab', (random() & 3) + 1, 1) ||
+      substr(hex(randomblob(2)), 2) || '-' ||
+      hex(randomblob(6))
+    ))`),
   organizationId: text("organization_id").notNull().references(() => organizations.id, { onDelete: "restrict" }),
   learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
   employeeReference: text("employee_reference"),
@@ -59,7 +87,7 @@ export const organizationLearners = sqliteTable("organization_learners", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull().default(sql`(unixepoch() * 1000)`),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull().default(sql`(unixepoch() * 1000)`).$onUpdate(() => new Date()),
+    .notNull().default(sql`(unixepoch() * 1000)`),
 }, (t) => [
   uniqueIndex("organization_learners_pair_unique").on(t.organizationId, t.learnerId),
   index("organization_learners_learner_idx").on(t.learnerId),

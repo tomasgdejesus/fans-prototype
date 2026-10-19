@@ -1,4 +1,2 @@
-import { z } from "zod";
-
-export const courseSchema = z.object({});
-export type CourseInput = z.infer<typeof courseSchema>;
+// Add concrete course request schemas when implementing course endpoints.
+export {};
