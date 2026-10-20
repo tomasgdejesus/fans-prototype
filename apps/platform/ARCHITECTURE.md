@@ -11,6 +11,7 @@ apps/platform/
 ├── package.json
 ├── index.html
 ├── vite.config.ts
+├── postcss.config.cjs            # Mantine CSS transforms and breakpoint variables
 ├── wrangler.json
 ├── drizzle.config.ts
 ├── eslint.config.js
@@ -31,8 +32,10 @@ apps/platform/
     │   ├── assets/
     │   ├── app/
     │   │   ├── router.tsx         # Register URLs, pages, layouts, and guards
-    │   │   └── providers.tsx      # App-wide providers
+    │   │   ├── providers.tsx      # App-wide providers
+    │   │   └── theme.ts          # Shared Mantine theme
     │   ├── routes/               # Page folders follow URL paths
+    │   │   ├── auth-layout.tsx   # Shared layout for account entry pages
     │   │   ├── page.tsx          # /
     │   │   ├── not-found.tsx
     │   │   ├── login/
@@ -59,7 +62,7 @@ apps/platform/
     │   │       └── settings/
     │   │           └── page.tsx
     │   ├── components/           # Reusable UI/etc. components reused across routes
-    │   │   └── ui/
+    │   │   └── page-placeholder.tsx
     │   ├── features/             # Domain code reused across routes
     │   │   └── courses/
     │   │       ├── components/
@@ -100,7 +103,7 @@ apps/platform/
 ## Frontend: src/react-app/
 
 - **React and Vite:** application UI and frontend build tooling.
-- **Tailwind CSS:** styling.
+- **Mantine:** UI components, responsive layouts, and a shared theme. Use CSS Modules for custom styles; PostCSS provides Mantine mixins and breakpoint variables.
 - **React Router:** browser routes, navigation, and layouts.
 - **TanStack Query:** server data fetching, caching, mutations, and invalidation.
 - **React Hook Form:** form state and submission.
@@ -109,7 +112,9 @@ apps/platform/
 
 Keep pages under `routes/` following URL paths, and register them explicitly in `app/router.tsx`. Folder names such as `[courseId]` are an organizational convention; route definitions use `:courseId`. Keep components used only by a page beside that page. Put domain components and API/query code reused across routes under `features/<feature>/`. Put generic UI under `components/` and app-wide clients under `lib/`.
 
-The current scaffold wires navigation, TanStack Query, and a typed `/api/health` endpoint. Authentication and database connections remain deferred; dashboard pages are public placeholders.
+`app/providers.tsx` composes Mantine and TanStack Query providers. `app/theme.ts` owns shared visual defaults. Import Mantine primitives directly from `@mantine/core`; create local shared components when the app needs a repeated composition. See [docs/UI.md](docs/UI.md) for examples. Mantine core styles load before application CSS in `main.tsx`.
+
+The current scaffold wires responsive Mantine navigation, page placeholders, TanStack Query, and a typed `/api/health` endpoint. Authentication and database connections remain deferred; dashboard pages are public placeholders. Account entry pages share a pathless React Router layout; their existing URLs stay the same.
 
 ## Backend: src/worker/
 

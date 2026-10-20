@@ -1,1 +1,8 @@
-@import "tailwindcss";
+/* Mantine core styles are imported before this file in main.tsx. */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+/* Use Mantine components for layout and *.module.css for custom styles. */

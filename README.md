@@ -1,6 +1,6 @@
 # FANS
 
-A pnpm workspace using React, TypeScript, Vite, and Tailwind CSS for the frontend, with Hono on Cloudflare Workers for the API.
+A pnpm workspace using React, TypeScript, Vite, and Mantine for the frontend, with Hono on Cloudflare Workers for the API. See the [platform UI guide](apps/platform/docs/UI.md) for themes, styling, and component conventions.
 
 ## Structure
 

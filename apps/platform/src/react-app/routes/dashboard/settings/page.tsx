@@ -1,3 +1,5 @@
+import { PagePlaceholder } from "../../../components/page-placeholder";
+
 export default function SettingsPage() {
-  return <div>Settings page</div>;
+  return <PagePlaceholder title="Settings" description="Manage your profile and account preferences." />;
 }

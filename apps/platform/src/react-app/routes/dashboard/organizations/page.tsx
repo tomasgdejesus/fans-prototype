@@ -1,3 +1,5 @@
+import { PagePlaceholder } from "../../../components/page-placeholder";
+
 export default function OrganizationsPage() {
-  return <div>Organizations page</div>;
+  return <PagePlaceholder title="Organizations" description="Manage organizations, employees, and training assignments." />;
 }

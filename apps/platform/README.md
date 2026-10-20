@@ -4,6 +4,8 @@ React SPA and Hono API developed together with Vite and deployed as one Cloudfla
 
 See the [repository README](../../README.md) for installation and common commands, and [ARCHITECTURE.md](ARCHITECTURE.md) for code placement.
 
+The frontend uses Mantine for UI components and layout. See [docs/UI.md](docs/UI.md) for theming, CSS Modules, and React Hook Form integration.
+
 From the repository root:
 
 ```bash

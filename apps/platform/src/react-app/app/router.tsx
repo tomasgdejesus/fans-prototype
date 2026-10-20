@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router";
+import AuthLayout from "../routes/auth-layout";
 import ForgotPasswordPage from "../routes/forgot-password/page";
 import HomePage from "../routes/page";
 import LoginPage from "../routes/login/page";
@@ -16,10 +17,15 @@ import SettingsPage from "../routes/dashboard/settings/page";
 
 export const router = createBrowserRouter([
   { path: "/", element: <HomePage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
-  { path: "/forgot-password", element: <ForgotPasswordPage /> },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      { path: "/register", element: <RegisterPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
+    ],
+  },
   {
     path: "/dashboard",
     element: <DashboardLayout />,
