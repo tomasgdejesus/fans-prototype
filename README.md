@@ -15,18 +15,15 @@ A pnpm workspace using React, TypeScript, Vite, and Mantine for the frontend, wi
 
 ## Setup
 
-Use Node.js 22.22+ and the pnpm version pinned in the root `package.json`. When initially adopting this scaffold, pin the pnpm version your team uses:
-
-```bash
-pnpm pkg set packageManager="pnpm@$(pnpm --version)"
-```
-
-Commit that change with the lockfile.
+Use Node.js 22.22+, Docker with Compose v2, and the pnpm version pinned in the root `package.json`.
 
 After cloning or extracting the repository, run from its root:
 
 ```bash
 pnpm install --frozen-lockfile
+cp apps/platform/.dev.vars.example apps/platform/.dev.vars
+pnpm db:up
+pnpm db:migrate
 pnpm dev
 ```
 
@@ -47,11 +44,13 @@ Run all commands from the repository root.
 | Preview build | `pnpm --dir apps/platform run preview` |
 | Generate Worker types | `pnpm --dir apps/platform run cf-typegen` |
 
-`build` includes type-checking. `deploy` includes a build. `check` runs lint, build, and a deployment dry run without publishing.
+`build` includes type-checking. `deploy` includes a production build. `check` runs lint, tests, build, and a deployment dry run without publishing.
 
 ## Database
 
-`apps/platform/README.md` contains instructions on setting up local Cloudflare D1 database.
+The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL in Docker; `pnpm db:down` stops it while retaining its data. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
+
+When first applying the PostgreSQL patch, run `pnpm install --no-frozen-lockfile` and commit the updated `pnpm-lock.yaml`. Registry access was unavailable when preparing the patch, so its new `pg` dependencies are not yet resolved in the supplied lockfile. Subsequent clean installs can use the frozen command above after that lockfile is committed.
 
 ## Dependencies
 
@@ -71,6 +70,8 @@ Use `-D` for development tools. Add root-level tooling with `pnpm add -Dw <packa
 - Public frontend variables: `apps/platform/.env.local`, using the `VITE_` prefix. These values are visible in the browser.
 - Local Worker secrets: `apps/platform/.dev.vars`. Keep secrets out of Git.
 - Worker bindings: `apps/platform/wrangler.json`. Regenerate Worker types after changing bindings.
+- Drizzle migration credentials: exported `DATABASE_URL`, or the app's `.dev.vars` as a local fallback. Frontend `.env.local` is not a migration credential source.
+- Production builds select the production Worker using the tracked, non-secret `apps/platform/.env.production`. Production `DATABASE_URL` must be configured separately as a Worker secret before using database routes.
 
 Authenticate before the first deployment:
 

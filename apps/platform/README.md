@@ -1,60 +1,76 @@
 # FANS Platform
 
-React SPA and Hono API developed together with Vite and deployed as one Cloudflare Worker.
+React SPA and Hono API developed with Vite and deployed as one Cloudflare Worker. PostgreSQL stores application data; Drizzle defines its schema and migrations. No hosted database or Hyperdrive resource is provisioned by this scaffold.
 
-See the [repository README](../../README.md) for installation and common commands, and [ARCHITECTURE.md](ARCHITECTURE.md) for code placement.
-
-The frontend uses Mantine for UI components and layout. See [docs/UI.md](docs/UI.md) for theming, CSS Modules, and React Hook Form integration.
+See the [root README](../../README.md), [architecture](ARCHITECTURE.md), and [UI guide](docs/UI.md).
 
 ## Local development
 
-Run the application from the repository root:
+Run these commands from the repository root with Docker running:
 
 ```bash
+pnpm install --frozen-lockfile
+cp apps/platform/.dev.vars.example apps/platform/.dev.vars
+pnpm db:up
+pnpm db:migrate
 pnpm dev
 ```
 
-The Cloudflare Vite plugin runs the Worker and its bindings locally. Local D1 data persists under `apps/platform/.wrangler/state/` and is separate from production.
+After first applying the PostgreSQL patch, use `pnpm install --no-frozen-lockfile` once to resolve the new driver dependencies, and commit the resulting lockfile before using frozen installs.
 
-After changing the Drizzle schema, generate and review the SQL:
+The example `DATABASE_URL` matches the local-only credentials in `compose.yaml`. The database port is bound to loopback. Keep Vite and Docker in the same development environment (for example, WSL with Docker Desktop integration). If port 5432 is occupied, change the Compose host port and the connection string together.
 
-```bash
-pnpm --dir apps/platform run db:generate
-```
+Docker stores data in a named volume. `pnpm db:down` retains it; `docker compose down --volumes` deletes it. Removing `.wrangler/state/` does not reset PostgreSQL. Changing `POSTGRES_*` initialization settings does not change credentials in an existing database volume.
 
-From `apps/platform/`, apply a generated SQL file to local D1:
+`/api/health` is database-independent liveness. `/api/health/db` runs `SELECT 1` and returns 503 when PostgreSQL is unavailable, without exposing database error details. It checks connectivity, not whether migrations have been applied. Neither the frontend nor unknown routes open database connections.
 
-```bash
-pnpm exec wrangler d1 execute fans-platform-local --local --file=./drizzle/<MIGRATION_FILE>.sql
-```
-
-Run a query against local D1:
+## Database changes
 
 ```bash
-pnpm exec wrangler d1 execute fans-platform-local --local --command="SELECT name FROM sqlite_master WHERE type = 'table';"
+pnpm db:generate
+# Review and commit new SQL and snapshot files.
+pnpm db:migrate
+pnpm db:studio
 ```
 
-Always include `--local` for development database operations. Removing `.wrangler/state/` resets all local Cloudflare data.
+The active PostgreSQL history is `drizzle/postgresql/`. Its baseline creates all 19 tables in an empty database. Existing SQLite files at the parent directory are retained only as history; they are not applied to PostgreSQL. This patch does not copy data out of D1. Export and transform any existing data separately before switching a live deployment.
+
+`drizzle.config.ts` generates migrations without credentials. `drizzle.runtime.config.ts` loads credentials for migration and Studio commands: an exported `DATABASE_URL` wins, otherwise it reads this app's `.dev.vars` explicitly. Drizzle Kit runs in Node and does not inherit Wrangler bindings. The selected URL determines the database modified by `db:migrate`; there is no implicit local/remote switch.
+
+IDs remain text containing application-generated UUID v7 values; certificate verification codes remain UUID v4. External SQL writers must provide these values. Timestamps use `timestamptz(3)`, booleans are native booleans, and JSON payloads use JSONB. Amounts, quantities, and counters use bigint mapped to JavaScript numbers, with checks retaining the existing safe-integer limits. Monetary values remain integer minor units.
+
+Drizzle update operations maintain `updated_at` through `$onUpdate`. Raw SQL and other writers must set it explicitly. Timestamp insertion defaults run in PostgreSQL. Application inputs still require validation; database checks provide another boundary.
+
+Use `withDatabase(connectionString, async (db) => { ... })` for backend queries and `db.transaction(async (tx) => { ... })` for related writes. The helper creates a request-owned pool and closes it in `finally`. Keep live connections out of global Worker state. Retries for payment and fulfillment writes require application idempotency; they are not added automatically by the connection helper.
 
 ## Testing
 
-Vitest runs separate frontend and backend projects. React tests live under `src/react-app/test/` and use jsdom with React Testing Library. Provider-neutral Hono tests live under `src/worker/test/`, run in Node, and exercise the application through `app.request()`.
-
-Test paths mirror the source paths they cover. Provider-specific adapter tests should remain separate from the primary application suites.
-
-From the repository root:
-
 ```bash
-pnpm dev
-pnpm check
 pnpm test
-pnpm test:coverage
+pnpm check
 ```
 
-The home page checks `/api/health` through Hono RPC and TanStack Query. Page folders follow URL paths, but `src/react-app/app/router.tsx` explicitly registers them; adding a folder does not create a route.
+Frontend tests use jsdom. The primary Hono suite runs in Node without database credentials or a running database. PostgreSQL integration tests are a separate opt-in command. Point them at a migrated development/test database, never production:
 
-Authentication, authorization, course operations, and database connections remain deferred. Dashboard pages are public placeholders until authentication is implemented.
+```bash
+# Bash / WSL; use the database created above, or a separate migrated test database.
+TEST_DATABASE_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans pnpm test:db
+```
 
-Table IDs use application-generated UUID v7 values from the `uuid` package through Drizzle `$defaultFn` callbacks. Certificate verification codes use random UUID v4 values through the same package. External SQL writers must supply their own IDs and verification codes. Initial timestamps retain SQLite SQL defaults; `updated_at` does not change automatically on update.
+These tests cover native type round trips, amount/currency checks, composite foreign keys, duplicate webhook events, transaction rollback, and database readiness. Fixtures are rolled back. Integration tests do not fall back to application credentials or run migrations automatically. Re-running `pnpm db:migrate` should apply no additional changes; `pnpm db:generate` should find no schema changes on a clean checkout.
 
-Drizzle generates SQL migration files but does not apply them automatically. Developers review and manually apply migrations through Wrangler.
+## Production preparation
+
+`vite build` selects Wrangler's production environment through `.env.production`; `pnpm deploy` builds and then deploys that flattened configuration. The production Worker is named `fans-platform`. Development uses the top-level `platform` configuration. Frontend `VITE_*` variables are public; database credentials must never use that prefix.
+
+Before database-backed production use, choose and provision PostgreSQL, migrate it with separate deployment credentials, and configure the runtime connection. For the current direct-connection adapter, set the Worker secret:
+
+```bash
+pnpm --dir apps/platform exec wrangler secret put DATABASE_URL --env production
+```
+
+Local `.dev.vars` values are not uploaded as production secrets. Use TLS settings appropriate to the hosted database, separate runtime and migration roles, and a separate staging database. No Neon account, connection string, or resource ID is included here.
+
+For Cloudflare production, Hyperdrive can later supply its `connectionString` to the same `withDatabase` helper; configure its binding and disable query caching for authentication, permissions, payments, and reads that require fresh data. A deployed staging test is needed because local development does not exercise Hyperdrive pooling/caching. Select and measure the hosted connection setup before relying on production latency or scale-to-zero behavior.
+
+Authentication, authorization, and course/payment operations remain deferred. Better Auth should use its PostgreSQL Drizzle adapter and the request's connection when implemented. Dashboard pages are currently public placeholders.

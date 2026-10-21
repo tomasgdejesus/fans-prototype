@@ -9,7 +9,13 @@
     "lint": "pnpm --filter @fans/platform run lint",
     "test": "pnpm --filter @fans/platform run test",
     "test:coverage": "pnpm --filter @fans/platform run test:coverage",
-    "check": "pnpm --filter @fans/platform run check"
+    "check": "pnpm --filter @fans/platform run check",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @fans/platform run db:generate",
+    "db:migrate": "pnpm --filter @fans/platform run db:migrate",
+    "db:studio": "pnpm --filter @fans/platform run db:studio",
+    "test:db": "pnpm --filter @fans/platform run test:db"
   },
   "engines": {
     "node": ">=22.22.0"

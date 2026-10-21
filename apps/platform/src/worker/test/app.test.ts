@@ -15,4 +15,11 @@ describe("platform API", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Not found" });
   });
+
+  it("reports unavailable database configuration without exposing details", async () => {
+    const response = await app.request("/api/health/db");
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ status: "unavailable" });
+  });
 });

@@ -1,122 +1,130 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "46ede0b5-7566-48d2-a17d-5bb33fd66e11",
-  "prevId": "fed5a757-f5a9-44da-9ae9-ed5b5339e854",
+  "id": "20699d01-da45-4489-9cb8-68d26471a947",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "account": {
+    "public.account": {
       "name": "account",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "account_id": {
           "name": "account_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_id": {
           "name": "provider_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "access_token": {
           "name": "access_token",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "refresh_token": {
           "name": "refresh_token",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "id_token": {
           "name": "id_token",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "access_token_expires_at": {
           "name": "access_token_expires_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "refresh_token_expires_at": {
           "name": "refresh_token_expires_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "scope": {
           "name": "scope",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "password": {
           "name": "password",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "account_provider_identity_unique": {
           "name": "account_provider_identity_unique",
           "columns": [
-            "provider_id",
-            "account_id"
+            {
+              "expression": "provider_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "account_user_idx": {
           "name": "account_user_idx",
           "columns": [
-            "user_id"
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -136,85 +144,80 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "session": {
+    "public.session": {
       "name": "session",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "token": {
           "name": "token",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "ip_address": {
           "name": "ip_address",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "user_agent": {
           "name": "user_agent",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
-        "session_token_unique": {
-          "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
-          "isUnique": true
-        },
         "session_user_idx": {
           "name": "session_user_idx",
           "columns": [
-            "user_id"
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -233,55 +236,59 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "user": {
+    "public.user": {
       "name": "user",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "display_name": {
           "name": "display_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "email_verified": {
           "name": "email_verified",
-          "type": "integer",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": false
         },
         "image": {
           "name": "image",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "platform_role": {
           "name": "platform_role",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'user'"
         },
         "status": {
@@ -289,38 +296,36 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
-      "indexes": {
-        "user_email_unique": {
-          "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "user_platform_role_check": {
           "name": "user_platform_role_check",
@@ -329,149 +334,134 @@
         "user_status_check": {
           "name": "user_status_check",
           "value": "\"user\".\"status\" IN ('active', 'suspended', 'archived')"
-        },
-        "user_email_verified_check": {
-          "name": "user_email_verified_check",
-          "value": "\"user\".\"email_verified\" IN (0, 1)"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "verification": {
+    "public.verification": {
       "name": "verification",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "identifier": {
           "name": "identifier",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "value": {
           "name": "value",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "verification_identifier_idx": {
           "name": "verification_identifier_idx",
           "columns": [
-            "identifier"
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "learners": {
+    "public.learners": {
       "name": "learners",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "first_name": {
           "name": "first_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "last_name": {
           "name": "last_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "contact_email": {
           "name": "contact_email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
-      "indexes": {
-        "learners_user_id_unique": {
-          "name": "learners_user_id_unique",
-          "columns": [
-            "user_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "learners_user_id_user_id_fk": {
           "name": "learners_user_id_user_id_fk",
@@ -488,101 +478,123 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "learners_user_id_unique": {
+          "name": "learners_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "learners_status_check": {
           "name": "learners_status_check",
           "value": "\"learners\".\"status\" IN ('active', 'archived')"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "organization_learners": {
+    "public.organization_learners": {
       "name": "organization_learners",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "organization_id": {
           "name": "organization_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "learner_id": {
           "name": "learner_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "employee_reference": {
           "name": "employee_reference",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'active'"
         },
         "joined_at": {
           "name": "joined_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "left_at": {
           "name": "left_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "organization_learners_pair_unique": {
           "name": "organization_learners_pair_unique",
           "columns": [
-            "organization_id",
-            "learner_id"
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "organization_learners_learner_idx": {
           "name": "organization_learners_learner_idx",
           "columns": [
-            "learner_id"
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -615,6 +627,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "organization_learners_status_check": {
           "name": "organization_learners_status_check",
@@ -624,80 +637,95 @@
           "name": "organization_learners_dates_check",
           "value": "\"organization_learners\".\"left_at\" IS NULL OR \"organization_learners\".\"left_at\" >= \"organization_learners\".\"joined_at\""
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "organization_memberships": {
+    "public.organization_memberships": {
       "name": "organization_memberships",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "organization_id": {
           "name": "organization_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "role": {
           "name": "role",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "organization_memberships_pair_unique": {
           "name": "organization_memberships_pair_unique",
           "columns": [
-            "organization_id",
-            "user_id"
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "organization_memberships_user_idx": {
           "name": "organization_memberships_user_idx",
           "columns": [
-            "user_id"
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -730,6 +758,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "organization_memberships_role_check": {
           "name": "organization_memberships_role_check",
@@ -739,218 +768,200 @@
           "name": "organization_memberships_status_check",
           "value": "\"organization_memberships\".\"status\" IN ('active', 'inactive')"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "organizations": {
+    "public.organizations": {
       "name": "organizations",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "contact_email": {
           "name": "contact_email",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "contact_phone": {
           "name": "contact_phone",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "organizations_status_check": {
           "name": "organizations_status_check",
           "value": "\"organizations\".\"status\" IN ('active', 'archived')"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "certificates": {
+    "public.certificates": {
       "name": "certificates",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "certificate_number": {
           "name": "certificate_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "learner_id": {
           "name": "learner_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "enrollment_id": {
           "name": "enrollment_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "recipient_name_snapshot": {
           "name": "recipient_name_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "credential_title_snapshot": {
           "name": "credential_title_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "issued_at": {
           "name": "issued_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "revoked_at": {
           "name": "revoked_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "revocation_reason": {
           "name": "revocation_reason",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "verification_code": {
           "name": "verification_code",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "document_reference": {
           "name": "document_reference",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "supersedes_certificate_id": {
           "name": "supersedes_certificate_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
-        "certificates_certificate_number_unique": {
-          "name": "certificates_certificate_number_unique",
-          "columns": [
-            "certificate_number"
-          ],
-          "isUnique": true
-        },
-        "certificates_verification_code_unique": {
-          "name": "certificates_verification_code_unique",
-          "columns": [
-            "verification_code"
-          ],
-          "isUnique": true
-        },
         "certificates_learner_idx": {
           "name": "certificates_learner_idx",
           "columns": [
-            "learner_id"
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "certificates_enrollment_idx": {
           "name": "certificates_enrollment_idx",
           "columns": [
-            "enrollment_id"
+            {
+              "expression": "enrollment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -997,7 +1008,23 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "certificates_certificate_number_unique": {
+          "name": "certificates_certificate_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "certificate_number"
+          ]
+        },
+        "certificates_verification_code_unique": {
+          "name": "certificates_verification_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "verification_code"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "certificates_expiry_check": {
           "name": "certificates_expiry_check",
@@ -1011,206 +1038,215 @@
           "name": "certificates_supersedes_check",
           "value": "\"certificates\".\"supersedes_certificate_id\" IS NULL OR \"certificates\".\"supersedes_certificate_id\" != \"certificates\".\"id\""
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "courses": {
+    "public.courses": {
       "name": "courses",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "code": {
           "name": "code",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "title": {
           "name": "title",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "description": {
           "name": "description",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'draft'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
-      "indexes": {
-        "courses_code_unique": {
-          "name": "courses_code_unique",
-          "columns": [
-            "code"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "courses_code_unique": {
+          "name": "courses_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "courses_status_check": {
           "name": "courses_status_check",
           "value": "\"courses\".\"status\" IN ('draft', 'active', 'archived')"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "enrollments": {
+    "public.enrollments": {
       "name": "enrollments",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "learner_id": {
           "name": "learner_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "course_id": {
           "name": "course_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "order_item_id": {
           "name": "order_item_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "organization_id": {
           "name": "organization_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'not_started'"
         },
         "enrolled_at": {
           "name": "enrolled_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "started_at": {
           "name": "started_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "completed_at": {
           "name": "completed_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
-        "enrollments_id_learner_unique": {
-          "name": "enrollments_id_learner_unique",
-          "columns": [
-            "id",
-            "learner_id"
-          ],
-          "isUnique": true
-        },
         "enrollments_learner_idx": {
           "name": "enrollments_learner_idx",
           "columns": [
-            "learner_id"
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "enrollments_course_idx": {
           "name": "enrollments_course_idx",
           "columns": [
-            "course_id"
+            {
+              "expression": "course_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "enrollments_order_item_idx": {
           "name": "enrollments_order_item_idx",
           "columns": [
-            "order_item_id"
+            {
+              "expression": "order_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "enrollments_organization_idx": {
           "name": "enrollments_organization_idx",
           "columns": [
-            "organization_id"
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1268,7 +1304,17 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "enrollments_id_learner_unique": {
+          "name": "enrollments_id_learner_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "learner_id"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "enrollments_status_check": {
           "name": "enrollments_status_check",
@@ -1286,129 +1332,132 @@
           "name": "enrollments_completed_timestamp_check",
           "value": "\"enrollments\".\"status\" != 'completed' OR \"enrollments\".\"completed_at\" IS NOT NULL"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "order_items": {
+    "public.order_items": {
       "name": "order_items",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "order_id": {
           "name": "order_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "product_id": {
           "name": "product_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "product_price_id": {
           "name": "product_price_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "sku_snapshot": {
           "name": "sku_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "product_name_snapshot": {
           "name": "product_name_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "quantity": {
           "name": "quantity",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "unit_amount": {
           "name": "unit_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "subtotal_amount": {
           "name": "subtotal_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "discount_amount": {
           "name": "discount_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "tax_amount": {
           "name": "tax_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "total_amount": {
           "name": "total_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "order_items_order_idx": {
           "name": "order_items_order_idx",
           "columns": [
-            "order_id"
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "order_items_product_idx": {
           "name": "order_items_product_idx",
           "columns": [
-            "product_id"
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1456,30 +1505,31 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "order_items_quantity_check": {
           "name": "order_items_quantity_check",
-          "value": "\"order_items\".\"quantity\" IS NULL OR (typeof(\"order_items\".\"quantity\") = 'integer' AND \"order_items\".\"quantity\" >= 1 AND \"order_items\".\"quantity\" <= 9007199254740991)"
+          "value": "\"order_items\".\"quantity\" IS NULL OR (\"order_items\".\"quantity\" >= 1 AND \"order_items\".\"quantity\" <= 9007199254740991)"
         },
         "order_items_unit_amount_check": {
           "name": "order_items_unit_amount_check",
-          "value": "\"order_items\".\"unit_amount\" IS NULL OR (typeof(\"order_items\".\"unit_amount\") = 'integer' AND \"order_items\".\"unit_amount\" >= 0 AND \"order_items\".\"unit_amount\" <= 9007199254740991)"
+          "value": "\"order_items\".\"unit_amount\" IS NULL OR (\"order_items\".\"unit_amount\" >= 0 AND \"order_items\".\"unit_amount\" <= 9007199254740991)"
         },
         "order_items_subtotal_check": {
           "name": "order_items_subtotal_check",
-          "value": "\"order_items\".\"subtotal_amount\" IS NULL OR (typeof(\"order_items\".\"subtotal_amount\") = 'integer' AND \"order_items\".\"subtotal_amount\" >= 0 AND \"order_items\".\"subtotal_amount\" <= 9007199254740991)"
+          "value": "\"order_items\".\"subtotal_amount\" IS NULL OR (\"order_items\".\"subtotal_amount\" >= 0 AND \"order_items\".\"subtotal_amount\" <= 9007199254740991)"
         },
         "order_items_discount_check": {
           "name": "order_items_discount_check",
-          "value": "\"order_items\".\"discount_amount\" IS NULL OR (typeof(\"order_items\".\"discount_amount\") = 'integer' AND \"order_items\".\"discount_amount\" >= 0 AND \"order_items\".\"discount_amount\" <= 9007199254740991)"
+          "value": "\"order_items\".\"discount_amount\" IS NULL OR (\"order_items\".\"discount_amount\" >= 0 AND \"order_items\".\"discount_amount\" <= 9007199254740991)"
         },
         "order_items_tax_check": {
           "name": "order_items_tax_check",
-          "value": "\"order_items\".\"tax_amount\" IS NULL OR (typeof(\"order_items\".\"tax_amount\") = 'integer' AND \"order_items\".\"tax_amount\" >= 0 AND \"order_items\".\"tax_amount\" <= 9007199254740991)"
+          "value": "\"order_items\".\"tax_amount\" IS NULL OR (\"order_items\".\"tax_amount\" >= 0 AND \"order_items\".\"tax_amount\" <= 9007199254740991)"
         },
         "order_items_total_check": {
           "name": "order_items_total_check",
-          "value": "\"order_items\".\"total_amount\" IS NULL OR (typeof(\"order_items\".\"total_amount\") = 'integer' AND \"order_items\".\"total_amount\" >= 0 AND \"order_items\".\"total_amount\" <= 9007199254740991)"
+          "value": "\"order_items\".\"total_amount\" IS NULL OR (\"order_items\".\"total_amount\" >= 0 AND \"order_items\".\"total_amount\" <= 9007199254740991)"
         },
         "order_items_subtotal_arithmetic_check": {
           "name": "order_items_subtotal_arithmetic_check",
@@ -1493,98 +1543,87 @@
           "name": "order_items_total_arithmetic_check",
           "value": "\"order_items\".\"total_amount\" = \"order_items\".\"subtotal_amount\" - \"order_items\".\"discount_amount\" + \"order_items\".\"tax_amount\""
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "orders": {
+    "public.orders": {
       "name": "orders",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "order_number": {
           "name": "order_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "placed_by_user_id": {
           "name": "placed_by_user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "purchasing_organization_id": {
           "name": "purchasing_organization_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "purchaser_name_snapshot": {
           "name": "purchaser_name_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "purchaser_email_snapshot": {
           "name": "purchaser_email_snapshot",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "billing_details_snapshot": {
           "name": "billing_details_snapshot",
-          "type": "text",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "subtotal_amount": {
           "name": "subtotal_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "discount_amount": {
           "name": "discount_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "tax_amount": {
           "name": "tax_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "total_amount": {
           "name": "total_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "status": {
@@ -1592,54 +1631,59 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'draft'"
         },
         "placed_at": {
           "name": "placed_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
-        "orders_order_number_unique": {
-          "name": "orders_order_number_unique",
-          "columns": [
-            "order_number"
-          ],
-          "isUnique": true
-        },
         "orders_user_idx": {
           "name": "orders_user_idx",
           "columns": [
-            "placed_by_user_id"
+            {
+              "expression": "placed_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "orders_organization_idx": {
           "name": "orders_organization_idx",
           "columns": [
-            "purchasing_organization_id"
+            {
+              "expression": "purchasing_organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1671,7 +1715,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "orders_order_number_unique": {
+          "name": "orders_order_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "order_number"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "orders_status_check": {
           "name": "orders_status_check",
@@ -1679,23 +1732,23 @@
         },
         "orders_currency_check": {
           "name": "orders_currency_check",
-          "value": "\"orders\".\"currency\" GLOB '[A-Z][A-Z][A-Z]'"
+          "value": "\"orders\".\"currency\" ~ '^[A-Z]{3}$'"
         },
         "orders_subtotal_check": {
           "name": "orders_subtotal_check",
-          "value": "\"orders\".\"subtotal_amount\" IS NULL OR (typeof(\"orders\".\"subtotal_amount\") = 'integer' AND \"orders\".\"subtotal_amount\" >= 0 AND \"orders\".\"subtotal_amount\" <= 9007199254740991)"
+          "value": "\"orders\".\"subtotal_amount\" IS NULL OR (\"orders\".\"subtotal_amount\" >= 0 AND \"orders\".\"subtotal_amount\" <= 9007199254740991)"
         },
         "orders_discount_check": {
           "name": "orders_discount_check",
-          "value": "\"orders\".\"discount_amount\" IS NULL OR (typeof(\"orders\".\"discount_amount\") = 'integer' AND \"orders\".\"discount_amount\" >= 0 AND \"orders\".\"discount_amount\" <= 9007199254740991)"
+          "value": "\"orders\".\"discount_amount\" IS NULL OR (\"orders\".\"discount_amount\" >= 0 AND \"orders\".\"discount_amount\" <= 9007199254740991)"
         },
         "orders_tax_check": {
           "name": "orders_tax_check",
-          "value": "\"orders\".\"tax_amount\" IS NULL OR (typeof(\"orders\".\"tax_amount\") = 'integer' AND \"orders\".\"tax_amount\" >= 0 AND \"orders\".\"tax_amount\" <= 9007199254740991)"
+          "value": "\"orders\".\"tax_amount\" IS NULL OR (\"orders\".\"tax_amount\" >= 0 AND \"orders\".\"tax_amount\" <= 9007199254740991)"
         },
         "orders_total_check": {
           "name": "orders_total_check",
-          "value": "\"orders\".\"total_amount\" IS NULL OR (typeof(\"orders\".\"total_amount\") = 'integer' AND \"orders\".\"total_amount\" >= 0 AND \"orders\".\"total_amount\" <= 9007199254740991)"
+          "value": "\"orders\".\"total_amount\" IS NULL OR (\"orders\".\"total_amount\" >= 0 AND \"orders\".\"total_amount\" <= 9007199254740991)"
         },
         "orders_discount_limit_check": {
           "name": "orders_discount_limit_check",
@@ -1704,99 +1757,87 @@
         "orders_total_arithmetic_check": {
           "name": "orders_total_arithmetic_check",
           "value": "\"orders\".\"total_amount\" = \"orders\".\"subtotal_amount\" - \"orders\".\"discount_amount\" + \"orders\".\"tax_amount\""
-        },
-        "orders_billing_json_check": {
-          "name": "orders_billing_json_check",
-          "value": "json_valid(\"orders\".\"billing_details_snapshot\")"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "product_prices": {
+    "public.product_prices": {
       "name": "product_prices",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "product_id": {
           "name": "product_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "unit_amount": {
           "name": "unit_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "active": {
           "name": "active",
-          "type": "integer",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": true
         },
         "valid_from": {
           "name": "valid_from",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "valid_until": {
           "name": "valid_until",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
-        "product_prices_id_product_unique": {
-          "name": "product_prices_id_product_unique",
-          "columns": [
-            "id",
-            "product_id"
-          ],
-          "isUnique": true
-        },
         "product_prices_product_idx": {
           "name": "product_prices_product_idx",
           "columns": [
-            "product_id"
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1815,102 +1856,102 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "product_prices_id_product_unique": {
+          "name": "product_prices_id_product_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "product_id"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "product_prices_currency_check": {
           "name": "product_prices_currency_check",
-          "value": "\"product_prices\".\"currency\" GLOB '[A-Z][A-Z][A-Z]'"
+          "value": "\"product_prices\".\"currency\" ~ '^[A-Z]{3}$'"
         },
         "product_prices_amount_check": {
           "name": "product_prices_amount_check",
-          "value": "\"product_prices\".\"unit_amount\" IS NULL OR (typeof(\"product_prices\".\"unit_amount\") = 'integer' AND \"product_prices\".\"unit_amount\" >= 0 AND \"product_prices\".\"unit_amount\" <= 9007199254740991)"
-        },
-        "product_prices_active_check": {
-          "name": "product_prices_active_check",
-          "value": "\"product_prices\".\"active\" IN (0, 1)"
+          "value": "\"product_prices\".\"unit_amount\" IS NULL OR (\"product_prices\".\"unit_amount\" >= 0 AND \"product_prices\".\"unit_amount\" <= 9007199254740991)"
         },
         "product_prices_dates_check": {
           "name": "product_prices_dates_check",
           "value": "\"product_prices\".\"valid_until\" IS NULL OR \"product_prices\".\"valid_from\" IS NULL OR \"product_prices\".\"valid_until\" > \"product_prices\".\"valid_from\""
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "products": {
+    "public.products": {
       "name": "products",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "sku": {
           "name": "sku",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "description": {
           "name": "description",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "product_type": {
           "name": "product_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'draft'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
-      "indexes": {
-        "products_sku_unique": {
-          "name": "products_sku_unique",
-          "columns": [
-            "sku"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "products_sku_unique": {
+          "name": "products_sku_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "sku"
+          ]
+        }
+      },
+      "policies": {},
       "checkConstraints": {
         "products_type_check": {
           "name": "products_type_check",
@@ -1920,162 +1961,199 @@
           "name": "products_status_check",
           "value": "\"products\".\"status\" IN ('draft', 'active', 'archived')"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "payment_events": {
+    "public.payment_events": {
       "name": "payment_events",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "provider": {
           "name": "provider",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_account_reference": {
           "name": "provider_account_reference",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "environment": {
           "name": "environment",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_event_id": {
           "name": "provider_event_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "event_type": {
           "name": "event_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "order_id": {
           "name": "order_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "payment_id": {
           "name": "payment_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "payload_json": {
           "name": "payload_json",
-          "type": "text",
+          "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "processing_status": {
           "name": "processing_status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'received'"
         },
         "received_at": {
           "name": "received_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "processed_at": {
           "name": "processed_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "attempt_count": {
           "name": "attempt_count",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "last_error": {
           "name": "last_error",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "payment_events_provider_event_unique": {
           "name": "payment_events_provider_event_unique",
           "columns": [
-            "provider",
-            "provider_account_reference",
-            "environment",
-            "provider_event_id"
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_account_reference",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payment_events_payment_idx": {
           "name": "payment_events_payment_idx",
           "columns": [
-            "payment_id"
+            {
+              "expression": "payment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payment_events_order_idx": {
           "name": "payment_events_order_idx",
           "columns": [
-            "order_id"
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payment_events_processing_idx": {
           "name": "payment_events_processing_idx",
           "columns": [
-            "processing_status",
-            "received_at"
+            {
+              "expression": "processing_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2108,6 +2186,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "payment_events_environment_check": {
           "name": "payment_events_environment_check",
@@ -2119,87 +2198,74 @@
         },
         "payment_events_attempt_count_check": {
           "name": "payment_events_attempt_count_check",
-          "value": "\"payment_events\".\"attempt_count\" IS NULL OR (typeof(\"payment_events\".\"attempt_count\") = 'integer' AND \"payment_events\".\"attempt_count\" >= 0 AND \"payment_events\".\"attempt_count\" <= 9007199254740991)"
-        },
-        "payment_events_payload_json_check": {
-          "name": "payment_events_payload_json_check",
-          "value": "json_valid(\"payment_events\".\"payload_json\")"
+          "value": "\"payment_events\".\"attempt_count\" IS NULL OR (\"payment_events\".\"attempt_count\" >= 0 AND \"payment_events\".\"attempt_count\" <= 9007199254740991)"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "payments": {
+    "public.payments": {
       "name": "payments",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "order_id": {
           "name": "order_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider": {
           "name": "provider",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_account_reference": {
           "name": "provider_account_reference",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_checkout_id": {
           "name": "provider_checkout_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "provider_payment_id": {
           "name": "provider_payment_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "idempotency_key": {
           "name": "idempotency_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "requested_amount": {
           "name": "requested_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "captured_amount": {
           "name": "captured_amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": 0
         },
         "status": {
@@ -2207,74 +2273,131 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'pending'"
         },
         "provider_status": {
           "name": "provider_status",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "succeeded_at": {
           "name": "succeeded_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "payments_provider_payment_unique": {
           "name": "payments_provider_payment_unique",
           "columns": [
-            "provider",
-            "provider_account_reference",
-            "provider_payment_id"
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_account_reference",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_payment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payments_provider_checkout_unique": {
           "name": "payments_provider_checkout_unique",
           "columns": [
-            "provider",
-            "provider_account_reference",
-            "provider_checkout_id"
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_account_reference",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_checkout_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payments_idempotency_unique": {
           "name": "payments_idempotency_unique",
           "columns": [
-            "provider",
-            "provider_account_reference",
-            "idempotency_key"
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_account_reference",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "payments_order_idx": {
           "name": "payments_order_idx",
           "columns": [
-            "order_id"
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2294,6 +2417,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "payments_status_check": {
           "name": "payments_status_check",
@@ -2301,93 +2425,108 @@
         },
         "payments_currency_check": {
           "name": "payments_currency_check",
-          "value": "\"payments\".\"currency\" GLOB '[A-Z][A-Z][A-Z]'"
+          "value": "\"payments\".\"currency\" ~ '^[A-Z]{3}$'"
         },
         "payments_requested_amount_check": {
           "name": "payments_requested_amount_check",
-          "value": "\"payments\".\"requested_amount\" IS NULL OR (typeof(\"payments\".\"requested_amount\") = 'integer' AND \"payments\".\"requested_amount\" >= 0 AND \"payments\".\"requested_amount\" <= 9007199254740991)"
+          "value": "\"payments\".\"requested_amount\" IS NULL OR (\"payments\".\"requested_amount\" >= 0 AND \"payments\".\"requested_amount\" <= 9007199254740991)"
         },
         "payments_captured_amount_check": {
           "name": "payments_captured_amount_check",
-          "value": "\"payments\".\"captured_amount\" IS NULL OR (typeof(\"payments\".\"captured_amount\") = 'integer' AND \"payments\".\"captured_amount\" >= 0 AND \"payments\".\"captured_amount\" <= 9007199254740991)"
+          "value": "\"payments\".\"captured_amount\" IS NULL OR (\"payments\".\"captured_amount\" >= 0 AND \"payments\".\"captured_amount\" <= 9007199254740991)"
         },
         "payments_capture_limit_check": {
           "name": "payments_capture_limit_check",
           "value": "\"payments\".\"captured_amount\" <= \"payments\".\"requested_amount\""
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "refund_items": {
+    "public.refund_items": {
       "name": "refund_items",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "refund_id": {
           "name": "refund_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "order_item_id": {
           "name": "order_item_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "amount": {
           "name": "amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "quantity": {
           "name": "quantity",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "refund_items_refund_item_unique": {
           "name": "refund_items_refund_item_unique",
           "columns": [
-            "refund_id",
-            "order_item_id"
+            {
+              "expression": "refund_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "order_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "refund_items_order_item_idx": {
           "name": "refund_items_order_item_idx",
           "columns": [
-            "order_item_id"
+            {
+              "expression": "order_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2420,140 +2559,163 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "refund_items_amount_check": {
           "name": "refund_items_amount_check",
-          "value": "\"refund_items\".\"amount\" IS NULL OR (typeof(\"refund_items\".\"amount\") = 'integer' AND \"refund_items\".\"amount\" >= 1 AND \"refund_items\".\"amount\" <= 9007199254740991)"
+          "value": "\"refund_items\".\"amount\" IS NULL OR (\"refund_items\".\"amount\" >= 1 AND \"refund_items\".\"amount\" <= 9007199254740991)"
         },
         "refund_items_quantity_check": {
           "name": "refund_items_quantity_check",
-          "value": "\"refund_items\".\"quantity\" IS NULL OR (typeof(\"refund_items\".\"quantity\") = 'integer' AND \"refund_items\".\"quantity\" >= 1 AND \"refund_items\".\"quantity\" <= 9007199254740991)"
+          "value": "\"refund_items\".\"quantity\" IS NULL OR (\"refund_items\".\"quantity\" >= 1 AND \"refund_items\".\"quantity\" <= 9007199254740991)"
         }
-      }
+      },
+      "isRLSEnabled": false
     },
-    "refunds": {
+    "public.refunds": {
       "name": "refunds",
+      "schema": "",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(lower(\n      hex(randomblob(4)) || '-' ||\n      hex(randomblob(2)) || '-4' ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      substr('89ab', (random() & 3) + 1, 1) ||\n      substr(hex(randomblob(2)), 2) || '-' ||\n      hex(randomblob(6))\n    ))"
+          "notNull": true
         },
         "payment_id": {
           "name": "payment_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "provider_refund_id": {
           "name": "provider_refund_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "idempotency_key": {
           "name": "idempotency_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "amount": {
           "name": "amount",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "reason": {
           "name": "reason",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "notNull": true
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
           "default": "'pending'"
         },
         "requested_by_user_id": {
           "name": "requested_by_user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "requested_at": {
           "name": "requested_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "completed_at": {
           "name": "completed_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "integer",
+          "type": "timestamp (3) with time zone",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch() * 1000)"
+          "default": "now()"
         }
       },
       "indexes": {
         "refunds_payment_provider_refund_unique": {
           "name": "refunds_payment_provider_refund_unique",
           "columns": [
-            "payment_id",
-            "provider_refund_id"
+            {
+              "expression": "payment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_refund_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "refunds_payment_idempotency_unique": {
           "name": "refunds_payment_idempotency_unique",
           "columns": [
-            "payment_id",
-            "idempotency_key"
+            {
+              "expression": "payment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "refunds_payment_idx": {
           "name": "refunds_payment_idx",
           "columns": [
-            "payment_id"
+            {
+              "expression": "payment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2586,6 +2748,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
         "refunds_status_check": {
           "name": "refunds_status_check",
@@ -2593,27 +2756,29 @@
         },
         "refunds_currency_check": {
           "name": "refunds_currency_check",
-          "value": "\"refunds\".\"currency\" GLOB '[A-Z][A-Z][A-Z]'"
+          "value": "\"refunds\".\"currency\" ~ '^[A-Z]{3}$'"
         },
         "refunds_amount_check": {
           "name": "refunds_amount_check",
-          "value": "\"refunds\".\"amount\" IS NULL OR (typeof(\"refunds\".\"amount\") = 'integer' AND \"refunds\".\"amount\" >= 1 AND \"refunds\".\"amount\" <= 9007199254740991)"
+          "value": "\"refunds\".\"amount\" IS NULL OR (\"refunds\".\"amount\" >= 1 AND \"refunds\".\"amount\" <= 9007199254740991)"
         },
         "refunds_completed_date_check": {
           "name": "refunds_completed_date_check",
           "value": "\"refunds\".\"completed_at\" IS NULL OR \"refunds\".\"completed_at\" >= \"refunds\".\"requested_at\""
         }
-      }
+      },
+      "isRLSEnabled": false
     }
   },
-  "views": {},
   "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
   "_meta": {
+    "columns": {},
     "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
+    "tables": {}
   }
 }

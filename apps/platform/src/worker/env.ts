@@ -1,3 +1,5 @@
 export type WorkerEnv = {
-  Bindings: Env;
+  Bindings: Env & {
+    DATABASE_URL?: string;
+  };
 };
