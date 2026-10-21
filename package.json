@@ -7,6 +7,8 @@
     "deploy": "pnpm --filter @fans/platform run deploy",
     "typecheck": "pnpm --filter @fans/platform run typecheck",
     "lint": "pnpm --filter @fans/platform run lint",
+    "test": "pnpm --filter @fans/platform run test",
+    "test:coverage": "pnpm --filter @fans/platform run test:coverage",
     "check": "pnpm --filter @fans/platform run check"
   },
   "engines": {

@@ -157,6 +157,29 @@ Infer ordinary API response types through Hono RPC. The frontend may import the 
 
 Keep Drizzle tables and database row types in the backend. API inputs and responses represent the public contract and may differ from stored rows.
 
+## Testing
+
+Vitest uses separate projects for the React application and backend:
+
+```text
+src/
+├── react-app/
+│   └── test/
+│       ├── setup.ts
+│       ├── helpers/
+│       ├── components/
+│       └── routes/
+└── worker/
+    └── test/
+        └── app.test.ts
+```
+
+React tests use jsdom and React Testing Library for components, routes, localization, and user interactions. Backend tests run in Node and test the exported Hono application through `app.request()`. Route tests cover HTTP contracts, while service tests should call business logic directly with injected fakes or repository interfaces.
+
+The primary backend suite must remain provider-neutral and must not require Wrangler, Miniflare, D1, or other Cloudflare-specific bindings. Provider adapters may have separate integration tests when introduced.
+
+Shared test helpers and fixtures belong inside the applicable test tree. Add feature tests beneath paths matching the production source as those features are implemented. `vitest.config.ts` defines both test projects and coverage collection.
+
 ## Database and schema management
 
 **Drizzle ORM** provides typed table definitions and queries. SQLite is the intended dialect for straightforward future D1 integration; choosing SQLite does not select a hosting provider.

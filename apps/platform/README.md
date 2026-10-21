@@ -6,11 +6,19 @@ See the [repository README](../../README.md) for installation and common command
 
 The frontend uses Mantine for UI components and layout. See [docs/UI.md](docs/UI.md) for theming, CSS Modules, and React Hook Form integration.
 
+## Testing
+
+Vitest runs separate frontend and backend projects. React tests live under `src/react-app/test/` and use jsdom with React Testing Library. Provider-neutral Hono tests live under `src/worker/test/`, run in Node, and exercise the application through `app.request()`.
+
+Test paths mirror the source paths they cover. Provider-specific adapter tests should remain separate from the primary application suites.
+
 From the repository root:
 
 ```bash
 pnpm dev
 pnpm check
+pnpm test
+pnpm test:coverage
 pnpm --dir apps/platform run db:generate
 ```
 
