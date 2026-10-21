@@ -1,3 +1,6 @@
+# Wrangler
+apps/platform/.wrangler/
+
 # Logs
 logs
 *.log
