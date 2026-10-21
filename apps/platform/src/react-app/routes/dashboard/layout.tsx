@@ -5,11 +5,31 @@ import { Link, NavLink as RouterNavLink, Outlet } from "react-router";
 import { LanguageSwitcher } from "../../components/language-switcher";
 
 const links = [
-  { to: "/dashboard", labelKey: "dashboard.navigation.overview", end: true },
-  { to: "/dashboard/courses", labelKey: "dashboard.navigation.courses" },
-  { to: "/dashboard/organizations", labelKey: "dashboard.navigation.organizations" },
-  { to: "/dashboard/orders", labelKey: "dashboard.navigation.orders" },
-  { to: "/dashboard/settings", labelKey: "dashboard.navigation.settings" },
+  {
+    to: "/dashboard",
+    labelKey: "dashboard.navigation.overview",
+    end: true,
+  },
+  {
+    to: "/dashboard/courses",
+    labelKey: "dashboard.navigation.courses",
+    end: false,
+  },
+  {
+    to: "/dashboard/organizations",
+    labelKey: "dashboard.navigation.organizations",
+    end: false,
+  },
+  {
+    to: "/dashboard/orders",
+    labelKey: "dashboard.navigation.orders",
+    end: false,
+  },
+  {
+    to: "/dashboard/settings",
+    labelKey: "dashboard.navigation.settings",
+    end: false,
+  },
 ] as const;
 
 export default function DashboardLayout() {

@@ -52,7 +52,7 @@ void i18n.use(initReactI18next).init({
   supportedLngs: [...supportedLanguages],
   nonExplicitSupportedLngs: true,
   interpolation: { escapeValue: false },
-  initImmediate: false,
+  initAsync: false,
 });
 
 applyLanguage(i18n.resolvedLanguage ?? i18n.language);
