@@ -49,6 +49,10 @@ Run all commands from the repository root.
 
 `build` includes type-checking. `deploy` includes a build. `check` runs lint, build, and a deployment dry run without publishing.
 
+## Database
+
+`apps/platform/README.md` contains instructions on setting up local Cloudflare D1 database.
+
 ## Dependencies
 
 Target the app that uses the package. Replace `<package>` with its name:
