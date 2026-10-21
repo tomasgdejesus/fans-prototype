@@ -1,5 +1,6 @@
 import { Badge, Paper, Stack, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface PagePlaceholderProps {
   title: string;
@@ -8,6 +9,8 @@ interface PagePlaceholderProps {
 }
 
 export function PagePlaceholder({ title, description, children }: PagePlaceholderProps) {
+  const { t } = useTranslation();
+
   return (
     <Stack gap="lg">
       <div>
@@ -16,8 +19,8 @@ export function PagePlaceholder({ title, description, children }: PagePlaceholde
       </div>
       <Paper withBorder p="lg">
         <Stack align="flex-start" gap="md">
-          <Badge variant="light">Coming soon</Badge>
-          <Text c="dimmed">This section is being built.</Text>
+          <Badge variant="light">{t("common.placeholder.comingSoon")}</Badge>
+          <Text c="dimmed">{t("common.placeholder.beingBuilt")}</Text>
           {children}
         </Stack>
       </Paper>

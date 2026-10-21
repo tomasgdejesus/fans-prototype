@@ -1,5 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { PagePlaceholder } from "../../../components/page-placeholder";
 
 export default function OrdersPage() {
-  return <PagePlaceholder title="Orders" description="Review purchases, order details, and receipts." />;
+  const { t } = useTranslation();
+
+  return <PagePlaceholder title={t("dashboard.orders.title")} description={t("dashboard.orders.description")} />;
 }

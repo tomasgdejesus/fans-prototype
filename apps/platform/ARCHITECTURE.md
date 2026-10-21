@@ -62,7 +62,14 @@ apps/platform/
     │   │       └── settings/
     │   │           └── page.tsx
     │   ├── components/           # Reusable UI/etc. components reused across routes
+    │   │   ├── language-switcher.tsx
     │   │   └── page-placeholder.tsx
+    │   ├── i18n/
+    │   │   ├── index.ts          # i18next initialization and language selection
+    │   │   ├── i18next.d.ts      # Type-safe translation keys
+    │   │   └── resources/
+    │   │       ├── en.ts         # English translations and resource shape
+    │   │       └── es.ts         # Spanish translations
     │   ├── features/             # Domain code reused across routes
     │   │   └── courses/
     │   │       ├── components/
@@ -109,12 +116,19 @@ apps/platform/
 - **React Hook Form:** form state and submission.
 - **Better Auth client:** browser authentication flows.
 - **Hono RPC client:** typed requests to the backend API.
+- **i18next and react-i18next:** English and Spanish localization, language selection, and type-safe translation keys.
 
 Keep pages under `routes/` following URL paths, and register them explicitly in `app/router.tsx`. Folder names such as `[courseId]` are an organizational convention; route definitions use `:courseId`. Keep components used only by a page beside that page. Put domain components and API/query code reused across routes under `features/<feature>/`. Put generic UI under `components/` and app-wide clients under `lib/`.
 
 `app/providers.tsx` composes Mantine and TanStack Query providers. `app/theme.ts` owns shared visual defaults. Import Mantine primitives directly from `@mantine/core`; create local shared components when the app needs a repeated composition. See [docs/UI.md](docs/UI.md) for examples. Mantine core styles load before application CSS in `main.tsx`.
 
 The current scaffold wires responsive Mantine navigation, page placeholders, TanStack Query, and a typed `/api/health` endpoint. Authentication and database connections remain deferred; dashboard pages are public placeholders. Account entry pages share a pathless React Router layout; their existing URLs stay the same.
+
+### Localization
+
+Localization is configured under `i18n/` and initialized by `main.tsx`. English and Spanish resources are bundled with the frontend. The app uses a saved language preference when available, otherwise selects a supported browser language and falls back to English.
+
+Keep user-facing interface text in the translation resources and access it through `useTranslation()`. The English resource defines the expected translation structure, while the Spanish resource is type-checked against it. The shared language switcher updates i18next, persists the selection, and updates the document's `lang` attribute.
 
 ## Backend: src/worker/
 

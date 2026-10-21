@@ -1,5 +1,13 @@
+import { useTranslation } from "react-i18next";
 import { PagePlaceholder } from "../../../components/page-placeholder";
 
 export default function OrganizationsPage() {
-  return <PagePlaceholder title="Organizations" description="Manage organizations, employees, and training assignments." />;
+  const { t } = useTranslation();
+
+  return (
+    <PagePlaceholder
+      title={t("dashboard.organizations.title")}
+      description={t("dashboard.organizations.description")}
+    />
+  );
 }

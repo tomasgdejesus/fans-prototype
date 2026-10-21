@@ -1,5 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { PagePlaceholder } from "../../../components/page-placeholder";
 
 export default function SettingsPage() {
-  return <PagePlaceholder title="Settings" description="Manage your profile and account preferences." />;
+  const { t } = useTranslation();
+
+  return <PagePlaceholder title={t("dashboard.settings.title")} description={t("dashboard.settings.description")} />;
 }

@@ -1,16 +1,19 @@
 import { Anchor, AppShell, Burger, Container, Group, NavLink, ScrollArea, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { useTranslation } from "react-i18next";
 import { Link, NavLink as RouterNavLink, Outlet } from "react-router";
+import { LanguageSwitcher } from "../../components/language-switcher";
 
 const links = [
-  { to: "/dashboard", label: "Overview", end: true },
-  { to: "/dashboard/courses", label: "Courses" },
-  { to: "/dashboard/organizations", label: "Organizations" },
-  { to: "/dashboard/orders", label: "Orders" },
-  { to: "/dashboard/settings", label: "Settings" },
-];
+  { to: "/dashboard", labelKey: "dashboard.navigation.overview", end: true },
+  { to: "/dashboard/courses", labelKey: "dashboard.navigation.courses" },
+  { to: "/dashboard/organizations", labelKey: "dashboard.navigation.organizations" },
+  { to: "/dashboard/orders", labelKey: "dashboard.navigation.orders" },
+  { to: "/dashboard/settings", labelKey: "dashboard.navigation.settings" },
+] as const;
 
 export default function DashboardLayout() {
+  const { t } = useTranslation();
   const [opened, { toggle, close }] = useDisclosure(false);
 
   return (
@@ -20,29 +23,32 @@ export default function DashboardLayout() {
       padding="lg"
     >
       <AppShell.Header>
-        <Group h="100%" px="lg">
-          <Burger
-            opened={opened}
-            onClick={toggle}
-            hiddenFrom="sm"
-            size="sm"
-            aria-label={opened ? "Close navigation" : "Open navigation"}
-            aria-controls="dashboard-navigation"
-            aria-expanded={opened}
-          />
-          <Anchor component={Link} to="/" fw={700} size="lg" underline="never">
-            FANS
-          </Anchor>
+        <Group h="100%" px="lg" justify="space-between">
+          <Group>
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label={opened ? t("dashboard.navigation.close") : t("dashboard.navigation.open")}
+              aria-controls="dashboard-navigation"
+              aria-expanded={opened}
+            />
+            <Anchor component={Link} to="/" fw={700} size="lg" underline="never">
+              {t("common.brand")}
+            </Anchor>
+          </Group>
+          <LanguageSwitcher />
         </Group>
       </AppShell.Header>
 
       <AppShell.Navbar component="div" id="dashboard-navigation" p="md">
         <AppShell.Section grow component={ScrollArea}>
-          <Stack component="nav" aria-label="Dashboard" gap="xs">
-            {links.map(({ to, label, end }) => (
+          <Stack component="nav" aria-label={t("dashboard.navigation.label")} gap="xs">
+            {links.map(({ to, labelKey, end }) => (
               <NavLink
                 key={to}
-                label={label}
+                label={t(labelKey)}
                 onClick={close}
                 renderRoot={(props) => (
                   <RouterNavLink {...props} to={to} end={end} />
@@ -52,7 +58,7 @@ export default function DashboardLayout() {
           </Stack>
         </AppShell.Section>
         <AppShell.Section pt="md">
-          <Text size="xs" c="dimmed">Food safety training and certificates</Text>
+          <Text size="xs" c="dimmed">{t("dashboard.tagline")}</Text>
         </AppShell.Section>
       </AppShell.Navbar>
 

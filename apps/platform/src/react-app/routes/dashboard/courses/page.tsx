@@ -1,5 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { PagePlaceholder } from "../../../components/page-placeholder";
 
 export default function CoursesPage() {
-  return <PagePlaceholder title="Courses" description="Access training and follow your learning progress." />;
+  const { t } = useTranslation();
+
+  return <PagePlaceholder title={t("dashboard.courses.title")} description={t("dashboard.courses.description")} />;
 }
