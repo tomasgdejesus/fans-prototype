@@ -1,6 +1,6 @@
 # FANS Platform
 
-React SPA and Hono API developed with Vite and deployed as one Cloudflare Worker. PostgreSQL stores application data; Drizzle defines its schema and migrations. No hosted database or Hyperdrive resource is provisioned by this scaffold.
+React SPA and Hono API developed with Vite and deployed as one Cloudflare Worker. PostgreSQL stores application data; Drizzle defines its schema and migrations. 
 
 See the [root README](../../README.md), [architecture](ARCHITECTURE.md), and [UI guide](docs/UI.md).
 
@@ -40,7 +40,7 @@ pnpm test
 pnpm check
 ```
 
-Frontend tests use jsdom. The primary Hono suite runs in Node without database credentials or a running database. PostgreSQL integration tests are a separate opt-in command. Point them at a migrated development/test database, never production:
+Frontend tests use jsdom. The primary Hono suite runs in Node without database credentials or a running database. PostgreSQL integration tests are ran separately:
 
 ```bash
 # Bash / WSL; use the database created above, or a separate migrated test database.
@@ -59,6 +59,4 @@ Before database-backed production use, choose and provision PostgreSQL, migrate 
 pnpm --dir apps/platform exec wrangler secret put DATABASE_URL --env production
 ```
 
-Local `.dev.vars` values are not uploaded as production secrets. Use TLS settings appropriate to the hosted database, separate runtime and migration roles, and a separate staging database. No Neon account, connection string, or resource ID is included here.
-
-Authentication, authorization, and course/payment operations remain deferred. Better Auth should use its PostgreSQL Drizzle adapter and the request's connection when implemented. Dashboard pages are currently public placeholders.
+Local `.dev.vars` values are not uploaded as production secrets. 
