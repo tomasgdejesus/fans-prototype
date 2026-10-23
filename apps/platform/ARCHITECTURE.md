@@ -123,8 +123,6 @@ Keep pages under `routes/` following URL paths, and register them explicitly in 
 
 `app/providers.tsx` composes Mantine and TanStack Query providers. `app/theme.ts` owns shared visual defaults. Import Mantine primitives directly from `@mantine/core`; create local shared components when the app needs a repeated composition. See [docs/UI.md](docs/UI.md) for examples. Mantine core styles load before application CSS in `main.tsx`.
 
-The current scaffold wires responsive Mantine navigation, page placeholders, TanStack Query, and a typed `/api/health` endpoint. A request-owned PostgreSQL connection helper and database readiness endpoint are implemented. Authentication remains deferred; dashboard pages are public placeholders. Account entry pages share a pathless React Router layout; their existing URLs stay the same.
-
 ### Localization
 
 Localization is configured under `i18n/` and initialized by `main.tsx`. English and Spanish resources are bundled with the frontend. The app uses a saved language preference when available, otherwise selects a supported browser language and falls back to English.
