@@ -4,9 +4,9 @@ import { eq, sql } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { Client } from "pg";
 import { v7 as uuidv7 } from "uuid";
-import app from "../app";
-import { withDatabase } from "../db/client";
-import * as schema from "../db/schema";
+import app from "../../app";
+import { withDatabase } from "../../db/client";
+import * as schema from "../../db/schema";
 
 // Never fall back to application credentials: use an explicitly selected,
 // migrated development/test database. Each fixture is rolled back.

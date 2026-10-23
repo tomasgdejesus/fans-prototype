@@ -18,6 +18,7 @@ export default defineConfig({
           name: "worker",
           environment: "node",
           include: ["src/worker/test/**/*.test.ts"],
+          exclude: ["src/worker/test/integration/**"],
         },
       },
     ],
