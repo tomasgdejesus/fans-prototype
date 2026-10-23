@@ -1,6 +1,6 @@
 CREATE TABLE "account" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"user_id" uuid NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
 	"access_token" text,
@@ -15,8 +15,8 @@ CREATE TABLE "account" (
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"user_id" uuid NOT NULL,
 	"token" text NOT NULL,
 	"expires_at" timestamp (3) with time zone NOT NULL,
 	"ip_address" text,
@@ -27,7 +27,7 @@ CREATE TABLE "session" (
 );
 --> statement-breakpoint
 CREATE TABLE "user" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"display_name" text NOT NULL,
 	"email" text NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE "user" (
 );
 --> statement-breakpoint
 CREATE TABLE "verification" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
 	"expires_at" timestamp (3) with time zone NOT NULL,
@@ -51,8 +51,8 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 CREATE TABLE "learners" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"user_id" uuid,
 	"first_name" text NOT NULL,
 	"last_name" text NOT NULL,
 	"contact_email" text,
@@ -64,9 +64,9 @@ CREATE TABLE "learners" (
 );
 --> statement-breakpoint
 CREATE TABLE "organization_learners" (
-	"id" text PRIMARY KEY NOT NULL,
-	"organization_id" text NOT NULL,
-	"learner_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"organization_id" uuid NOT NULL,
+	"learner_id" uuid NOT NULL,
 	"employee_reference" text,
 	"status" text DEFAULT 'active' NOT NULL,
 	"joined_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
@@ -78,9 +78,9 @@ CREATE TABLE "organization_learners" (
 );
 --> statement-breakpoint
 CREATE TABLE "organization_memberships" (
-	"id" text PRIMARY KEY NOT NULL,
-	"organization_id" text NOT NULL,
-	"user_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"organization_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
 	"role" text NOT NULL,
 	"status" text DEFAULT 'active' NOT NULL,
 	"created_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE "organization_memberships" (
 );
 --> statement-breakpoint
 CREATE TABLE "organizations" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"name" text NOT NULL,
 	"contact_email" text,
 	"contact_phone" text,
@@ -101,19 +101,19 @@ CREATE TABLE "organizations" (
 );
 --> statement-breakpoint
 CREATE TABLE "certificates" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"certificate_number" text NOT NULL,
-	"learner_id" text NOT NULL,
-	"enrollment_id" text NOT NULL,
+	"learner_id" uuid NOT NULL,
+	"enrollment_id" uuid NOT NULL,
 	"recipient_name_snapshot" text NOT NULL,
 	"credential_title_snapshot" text NOT NULL,
 	"issued_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	"expires_at" timestamp (3) with time zone,
 	"revoked_at" timestamp (3) with time zone,
 	"revocation_reason" text,
-	"verification_code" text NOT NULL,
+	"verification_code" text DEFAULT gen_random_uuid()::text NOT NULL,
 	"document_reference" text,
-	"supersedes_certificate_id" text,
+	"supersedes_certificate_id" uuid,
 	"created_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "certificates_certificate_number_unique" UNIQUE("certificate_number"),
@@ -124,7 +124,7 @@ CREATE TABLE "certificates" (
 );
 --> statement-breakpoint
 CREATE TABLE "courses" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"code" text NOT NULL,
 	"title" text NOT NULL,
 	"description" text NOT NULL,
@@ -136,11 +136,11 @@ CREATE TABLE "courses" (
 );
 --> statement-breakpoint
 CREATE TABLE "enrollments" (
-	"id" text PRIMARY KEY NOT NULL,
-	"learner_id" text NOT NULL,
-	"course_id" text NOT NULL,
-	"order_item_id" text,
-	"organization_id" text,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"learner_id" uuid NOT NULL,
+	"course_id" uuid NOT NULL,
+	"order_item_id" uuid,
+	"organization_id" uuid,
 	"status" text DEFAULT 'not_started' NOT NULL,
 	"enrolled_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	"started_at" timestamp (3) with time zone,
@@ -155,10 +155,10 @@ CREATE TABLE "enrollments" (
 );
 --> statement-breakpoint
 CREATE TABLE "order_items" (
-	"id" text PRIMARY KEY NOT NULL,
-	"order_id" text NOT NULL,
-	"product_id" text NOT NULL,
-	"product_price_id" text,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"order_id" uuid NOT NULL,
+	"product_id" uuid NOT NULL,
+	"product_price_id" uuid,
 	"sku_snapshot" text NOT NULL,
 	"product_name_snapshot" text NOT NULL,
 	"quantity" bigint NOT NULL,
@@ -181,10 +181,10 @@ CREATE TABLE "order_items" (
 );
 --> statement-breakpoint
 CREATE TABLE "orders" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"order_number" text NOT NULL,
-	"placed_by_user_id" text NOT NULL,
-	"purchasing_organization_id" text,
+	"placed_by_user_id" uuid NOT NULL,
+	"purchasing_organization_id" uuid,
 	"purchaser_name_snapshot" text NOT NULL,
 	"purchaser_email_snapshot" text NOT NULL,
 	"billing_details_snapshot" jsonb NOT NULL,
@@ -209,8 +209,8 @@ CREATE TABLE "orders" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_prices" (
-	"id" text PRIMARY KEY NOT NULL,
-	"product_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"product_id" uuid NOT NULL,
 	"currency" text NOT NULL,
 	"unit_amount" bigint NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE "product_prices" (
 );
 --> statement-breakpoint
 CREATE TABLE "products" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"sku" text NOT NULL,
 	"name" text NOT NULL,
 	"description" text NOT NULL,
@@ -239,14 +239,14 @@ CREATE TABLE "products" (
 );
 --> statement-breakpoint
 CREATE TABLE "payment_events" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"provider" text NOT NULL,
 	"provider_account_reference" text NOT NULL,
 	"environment" text NOT NULL,
 	"provider_event_id" text NOT NULL,
 	"event_type" text NOT NULL,
-	"order_id" text,
-	"payment_id" text,
+	"order_id" uuid,
+	"payment_id" uuid,
 	"payload_json" jsonb NOT NULL,
 	"processing_status" text DEFAULT 'received' NOT NULL,
 	"received_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
@@ -261,8 +261,8 @@ CREATE TABLE "payment_events" (
 );
 --> statement-breakpoint
 CREATE TABLE "payments" (
-	"id" text PRIMARY KEY NOT NULL,
-	"order_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"order_id" uuid NOT NULL,
 	"provider" text NOT NULL,
 	"provider_account_reference" text NOT NULL,
 	"provider_checkout_id" text,
@@ -284,9 +284,9 @@ CREATE TABLE "payments" (
 );
 --> statement-breakpoint
 CREATE TABLE "refund_items" (
-	"id" text PRIMARY KEY NOT NULL,
-	"refund_id" text NOT NULL,
-	"order_item_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"refund_id" uuid NOT NULL,
+	"order_item_id" uuid NOT NULL,
 	"amount" bigint NOT NULL,
 	"quantity" bigint,
 	"created_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
@@ -296,15 +296,15 @@ CREATE TABLE "refund_items" (
 );
 --> statement-breakpoint
 CREATE TABLE "refunds" (
-	"id" text PRIMARY KEY NOT NULL,
-	"payment_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"payment_id" uuid NOT NULL,
 	"provider_refund_id" text,
 	"idempotency_key" text NOT NULL,
 	"amount" bigint NOT NULL,
 	"currency" text NOT NULL,
 	"reason" text NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
-	"requested_by_user_id" text,
+	"requested_by_user_id" uuid,
 	"requested_at" timestamp (3) with time zone DEFAULT now() NOT NULL,
 	"completed_at" timestamp (3) with time zone,
 	"created_at" timestamp (3) with time zone DEFAULT now() NOT NULL,

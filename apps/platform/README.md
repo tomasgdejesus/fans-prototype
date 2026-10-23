@@ -24,6 +24,8 @@ Docker stores data in a named volume. `pnpm db:down` retains it; `docker compose
 
 ## Database changes
 
+PostgreSQL 18+ is required. 
+
 ```bash
 pnpm db:generate
 # Review and commit new SQL and snapshot files.

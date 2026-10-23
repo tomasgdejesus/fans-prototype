@@ -1,6 +1,5 @@
-import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
-import { check, foreignKey, index, pgTable, text, timestamp, unique, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { check, foreignKey, index, pgTable, text, timestamp, uuid, unique, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { learners, organizations } from "./people.ts";
 import { orderItems } from "./commerce.ts";
 
@@ -8,7 +7,7 @@ const courseStatuses = ["draft", "active", "archived"] as const;
 const enrollmentStatuses = ["not_started", "in_progress", "completed", "failed", "withdrawn", "expired", "revoked"] as const;
 
 export const courses = pgTable("courses", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
   code: text("code").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -16,16 +15,16 @@ export const courses = pgTable("courses", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [check("courses_status_check", sql`${t.status} IN ('draft', 'active', 'archived')`)]);
 
 // This follows the current draft: course_id, without a course-version table.
 export const enrollments = pgTable("enrollments", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
-  learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
-  courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "restrict" }),
-  orderItemId: text("order_item_id").references(() => orderItems.id, { onDelete: "restrict" }),
-  organizationId: text("organization_id").references(() => organizations.id, { onDelete: "restrict" }),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
+  learnerId: uuid("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "restrict" }),
+  orderItemId: uuid("order_item_id").references(() => orderItems.id, { onDelete: "restrict" }),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "restrict" }),
   status: text("status", { enum: enrollmentStatuses }).notNull().default("not_started"),
   enrolledAt: timestamp("enrolled_at", { withTimezone: true, mode: "date", precision: 3 }).notNull().defaultNow(),
   startedAt: timestamp("started_at", { withTimezone: true, mode: "date", precision: 3 }),
@@ -33,7 +32,7 @@ export const enrollments = pgTable("enrollments", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   unique("enrollments_id_learner_unique").on(t.id, t.learnerId),
   index("enrollments_learner_idx").on(t.learnerId),
@@ -47,23 +46,23 @@ export const enrollments = pgTable("enrollments", {
 ]);
 
 export const certificates = pgTable("certificates", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
   certificateNumber: text("certificate_number").notNull().unique(),
-  learnerId: text("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
-  enrollmentId: text("enrollment_id").notNull(),
+  learnerId: uuid("learner_id").notNull().references(() => learners.id, { onDelete: "restrict" }),
+  enrollmentId: uuid("enrollment_id").notNull(),
   recipientNameSnapshot: text("recipient_name_snapshot").notNull(),
   credentialTitleSnapshot: text("credential_title_snapshot").notNull(),
   issuedAt: timestamp("issued_at", { withTimezone: true, mode: "date", precision: 3 }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date", precision: 3 }),
   revokedAt: timestamp("revoked_at", { withTimezone: true, mode: "date", precision: 3 }),
   revocationReason: text("revocation_reason"),
-  verificationCode: text("verification_code").notNull().unique().$defaultFn(() => uuidv4()),
+  verificationCode: text("verification_code").notNull().unique().default(sql`gen_random_uuid()::text`),
   documentReference: text("document_reference"),
-  supersedesCertificateId: text("supersedes_certificate_id").references((): AnyPgColumn => certificates.id, { onDelete: "restrict" }),
+  supersedesCertificateId: uuid("supersedes_certificate_id").references((): AnyPgColumn => certificates.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   foreignKey({ name: "certificates_enrollment_learner_fk", columns: [t.enrollmentId, t.learnerId], foreignColumns: [enrollments.id, enrollments.learnerId] }).onDelete("restrict"),
   index("certificates_learner_idx").on(t.learnerId),

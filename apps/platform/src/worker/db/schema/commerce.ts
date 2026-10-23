@@ -1,6 +1,5 @@
-import { v7 as uuidv7 } from "uuid";
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, foreignKey, index, jsonb, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, foreignKey, index, jsonb, pgTable, text, timestamp, uuid, unique } from "drizzle-orm/pg-core";
 import { user } from "./auth.ts";
 import { organizations } from "./people.ts";
 
@@ -9,7 +8,7 @@ const productStatuses = ["draft", "active", "archived"] as const;
 const orderStatuses = ["draft", "pending", "confirmed", "completed", "canceled"] as const;
 
 export const products = pgTable("products", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
   sku: text("sku").notNull().unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
@@ -18,15 +17,15 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   check("products_type_check", sql`${t.productType} IN ('course_access', 'course_package')`),
   check("products_status_check", sql`${t.status} IN ('draft', 'active', 'archived')`),
 ]);
 
 export const productPrices = pgTable("product_prices", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
-  productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   currency: text("currency").notNull(),
   unitAmount: bigint("unit_amount", { mode: "number" }).notNull(),
   active: boolean("active").notNull().default(true),
@@ -35,7 +34,7 @@ export const productPrices = pgTable("product_prices", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   unique("product_prices_id_product_unique").on(t.id, t.productId),
   index("product_prices_product_idx").on(t.productId),
@@ -45,10 +44,10 @@ export const productPrices = pgTable("product_prices", {
 ]);
 
 export const orders = pgTable("orders", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
   orderNumber: text("order_number").notNull().unique(),
-  placedByUserId: text("placed_by_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
-  purchasingOrganizationId: text("purchasing_organization_id").references(() => organizations.id, { onDelete: "restrict" }),
+  placedByUserId: uuid("placed_by_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  purchasingOrganizationId: uuid("purchasing_organization_id").references(() => organizations.id, { onDelete: "restrict" }),
   purchaserNameSnapshot: text("purchaser_name_snapshot").notNull(),
   purchaserEmailSnapshot: text("purchaser_email_snapshot").notNull(),
   billingDetailsSnapshot: jsonb("billing_details_snapshot").$type<Record<string, unknown>>().notNull(),
@@ -62,7 +61,7 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   index("orders_user_idx").on(t.placedByUserId),
   index("orders_organization_idx").on(t.purchasingOrganizationId),
@@ -77,10 +76,10 @@ export const orders = pgTable("orders", {
 ]);
 
 export const orderItems = pgTable("order_items", {
-  id: text("id").primaryKey().notNull().$defaultFn(() => uuidv7()),
-  orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
-  productId: text("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
-  productPriceId: text("product_price_id"),
+  id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
+  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  productPriceId: uuid("product_price_id"),
   skuSnapshot: text("sku_snapshot").notNull(),
   productNameSnapshot: text("product_name_snapshot").notNull(),
   quantity: bigint("quantity", { mode: "number" }).notNull(),
@@ -92,7 +91,7 @@ export const orderItems = pgTable("order_items", {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date", precision: 3 })
     .notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date", precision: 3 })
-    .notNull().defaultNow().$onUpdate(() => new Date()),
+    .notNull().defaultNow(),
 }, (t) => [
   foreignKey({ name: "order_items_price_product_fk", columns: [t.productPriceId, t.productId], foreignColumns: [productPrices.id, productPrices.productId] }).onDelete("restrict"),
   index("order_items_order_idx").on(t.orderId),
