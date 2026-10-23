@@ -1,6 +1,6 @@
 # FANS
 
-A pnpm workspace using React, TypeScript, Vite, and Mantine for the frontend, with Hono on Cloudflare Workers for the API. See the [platform UI guide](apps/platform/docs/UI.md) for themes, styling, and component conventions.
+A pnpm workspace using React, TypeScript, Vite, and Mantine for the frontend, with Hono on Cloudflare Workers for the API. 
 
 ## Structure
 
@@ -46,7 +46,7 @@ Run all commands from the repository root.
 
 `build` includes type-checking. `deploy` includes a production build. `check` runs lint, tests, build, and a deployment dry run without publishing.
 
-## Database
+## Local Dev Database
 
 The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL in Docker; `pnpm db:down` stops it while retaining its data. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
 
