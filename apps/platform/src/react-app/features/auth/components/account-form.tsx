@@ -8,6 +8,7 @@ import { authClient, type AuthFailure } from "../../../lib/auth-client";
 import { accountPath, allowedDestination } from "../navigation";
 import { publicSessionKey, usePublicSession } from "../use-public-session";
 import { AuthCard, AuthError } from "./auth-card";
+import { OAuthButtons } from "./oauth-buttons";
 
 type Values = { name: string; email: string; password: string; confirmPassword: string };
 
@@ -49,6 +50,7 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
       {session.isError && <Alert color="red" role="alert">{t("publicPages.auth.sessionError")}</Alert>}
       <AuthError reason={error} />
       {error === "verificationRequired" && <Anchor component={Link} to={accountPath("/verify-email", destination)}>{t("routes.verifyEmail.title")}</Anchor>}
+      {!registered && <OAuthButtons providers={[{ id: "google", label: t("publicPages.auth.oauth.google") }]} />}
       {registered ? (
         <Alert color="teal" role="status">{t("publicPages.auth.registered")}</Alert>
       ) : (
