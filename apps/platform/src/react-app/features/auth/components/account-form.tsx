@@ -10,7 +10,7 @@ import { publicSessionKey, usePublicSession } from "../use-public-session";
 import { AuthCard, AuthError } from "./auth-card";
 import { OAuthButtons } from "./oauth-buttons";
 
-type Values = { name: string; email: string; password: string; confirmPassword: string };
+type Values = { email: string; password: string; confirmPassword: string };
 
 export function AccountForm({ mode }: { mode: "login" | "register" }) {
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
   const [registered, setRegistered] = useState(false);
   const isRegister = mode === "register";
   const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<Values>({
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { email: "", password: "", confirmPassword: "" },
   });
 
   async function submit(values: Values) {
@@ -31,7 +31,7 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
     setError(null);
     try {
       const result = isRegister
-        ? await authClient.register({ name: values.name.trim(), email: values.email.trim(), password: values.password })
+        ? await authClient.register({ email: values.email.trim(), password: values.password })
         : await authClient.signIn({ email: values.email.trim(), password: values.password });
       if (!result.ok) { setError(result.reason); return; }
       const current = await authClient.getSession();
@@ -56,8 +56,6 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
       ) : (
         <form onSubmit={handleSubmit(submit)} noValidate>
           <Stack>
-            {isRegister && <TextInput label={t("publicPages.auth.name")} autoComplete="name" required error={errors.name?.message}
-              {...register("name", { validate: (value) => value.trim().length > 0 || t("publicPages.auth.required") })} />}
             <TextInput label={t("publicPages.auth.email")} type="email" autoComplete="email" required error={errors.email?.message}
               {...register("email", { required: t("publicPages.auth.required"), pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: t("publicPages.auth.invalidEmail") } })} />
             <PasswordInput visibilityToggleFocusable visibilityToggleButtonProps={{ "aria-label": t("publicPages.auth.togglePassword") }}

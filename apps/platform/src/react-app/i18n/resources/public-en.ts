@@ -9,7 +9,7 @@ export const publicPages = {
     unavailable: "Account services are not available in this prototype. You can browse the catalog, but account forms cannot be submitted yet.",
     sessionError: "We could not check your session. Please reload the page and try again.",
     checking: "Checking your session…",
-    email: "Email address", name: "Full name", password: "Password", newPassword: "New password", confirmPassword: "Confirm password",
+    email: "Email address", password: "Password", newPassword: "New password", confirmPassword: "Confirm password",
     togglePassword: "Show or hide password",
     required: "This field is required.", invalidEmail: "Enter a valid email address.", passwordHint: "Use at least 8 characters.", shortPassword: "Use at least 8 characters.", passwordMismatch: "Passwords must match.",
     signIn: "Log in", register: "Create account", sendReset: "Send reset link", reset: "Reset password", resend: "Resend verification email", verify: "Verify email",

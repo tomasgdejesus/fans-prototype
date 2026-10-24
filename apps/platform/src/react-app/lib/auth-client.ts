@@ -11,7 +11,7 @@ export interface PublicAuthClient {
   canResendVerification: boolean;
   getSession(): Promise<PublicSession | null>;
   signIn(input: { email: string; password: string }): Promise<AuthResult>;
-  register(input: { name: string; email: string; password: string }): Promise<AuthResult>;
+  register(input: { email: string; password: string }): Promise<AuthResult>;
   requestPasswordReset(input: { email: string; redirectTo: string }): Promise<EmailRequestResult>;
   resetPassword(input: { token: string; password: string }): Promise<AuthResult>;
   verifyEmail(input: { token: string }): Promise<AuthResult>;
