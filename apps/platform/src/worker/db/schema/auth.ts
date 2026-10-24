@@ -9,7 +9,7 @@ const userStatuses = ["active", "suspended", "archived"] as const;
 // Verify/regenerate them against your final Better Auth config and plugins.
 export const user = pgTable("user", {
   id: uuid("id").primaryKey().notNull().default(sql`uuidv7()`),
-  name: text("display_name").notNull(),
+  name: text("display_name").notNull(), // Placeholder: "FANS User" ; may be changed by User in their dashboard
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
