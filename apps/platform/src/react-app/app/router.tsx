@@ -49,15 +49,16 @@ export const router = createBrowserRouter([
       { path: "/verify-email", element: <VerifyEmailPage /> },
       { path: "/shared/certificates/:token", element: <SharedCertificatePage /> },
       { path: "/verify/:code", element: <VerifyPage /> },
-    ],
-  },
-  {
-    element: <AuthLayout />,
-    children: [
-      { path: "/login", element: <LoginPage /> },
-      { path: "/register", element: <RegisterPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/reset-password", element: <ResetPasswordPage /> },
+      {
+        element: <AuthLayout />,
+        children: [
+          { path: "/login", element: <LoginPage /> },
+          { path: "/register", element: <RegisterPage /> },
+          { path: "/forgot-password", element: <ForgotPasswordPage /> },
+          { path: "/reset-password", element: <ResetPasswordPage /> },
+        ],
+      },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
   {
@@ -96,5 +97,4 @@ export const router = createBrowserRouter([
       { path: "orders/:orderId", element: <AdminOrderPage /> },
     ],
   },
-  { path: "*", element: <NotFoundPage /> },
 ]);

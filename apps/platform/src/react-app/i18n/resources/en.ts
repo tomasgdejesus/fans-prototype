@@ -1,4 +1,7 @@
+import { publicPages } from "./public-en";
+
 export const en = {
+  publicPages,
   common: {
     brand: "FANS",
     language: {

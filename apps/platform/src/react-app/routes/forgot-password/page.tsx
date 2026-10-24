@@ -1,14 +1,18 @@
 import { Anchor } from "@mantine/core";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
-import { PagePlaceholder } from "../../components/page-placeholder";
+import { Link, useSearchParams } from "react-router";
+import { AuthCard } from "../../features/auth/components/auth-card";
+import { EmailRequestForm } from "../../features/auth/components/email-request-form";
+import { accountPath, allowedDestination } from "../../features/auth/navigation";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
-
+  const [search] = useSearchParams();
+  const destination = allowedDestination(search.get("returnTo"));
   return (
-    <PagePlaceholder title={t("auth.forgotPassword.title")} description={t("auth.forgotPassword.description")}>
-      <Anchor component={Link} to="/login">{t("common.actions.backToLogIn")}</Anchor>
-    </PagePlaceholder>
+    <AuthCard title={t("auth.forgotPassword.title")} description={t("auth.forgotPassword.description")}>
+      <EmailRequestForm kind="recovery" destination={destination} />
+      <Anchor component={Link} to={accountPath("/login", destination)}>{t("common.actions.backToLogIn")}</Anchor>
+    </AuthCard>
   );
 }

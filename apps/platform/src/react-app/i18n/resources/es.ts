@@ -145,4 +145,5 @@ export const es = {
     adminOrderDetail: { title: "Registro del pedido", description: "Consulta el pedido y su contexto de entrega." },
     adminNavigation: { overview: "Resumen", learners: "Estudiantes", courses: "Cursos", enrollments: "Inscripciones", certificates: "Certificados", orders: "Pedidos" },
   },
-} satisfies TranslationResource;
+// New public-page labels use i18next's English fallback until translated.
+} satisfies Omit<TranslationResource, "publicPages">;

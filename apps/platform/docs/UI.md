@@ -121,13 +121,8 @@ MultiSelect. If adopting `zodResolver`, first add `@hookform/resolvers` to this
 app with `pnpm --filter @fans/platform add @hookform/resolvers`. Validate input
 again in the backend using the shared request contracts.
 
-## Skeleton scope and verification
+## Testing + Verification
 
-The account, course, organization, order, and settings pages are visibly marked
-placeholders. They do not implement authentication, enrollment, payments,
-employee management, or account changes. The home page retains the existing
-Hono RPC health query. Dashboard pages remain public until backend and route
-authorization are implemented.
 
 From the repository root, run:
 
@@ -138,8 +133,8 @@ pnpm build
 pnpm dev
 ```
 
-Check the home health status, all existing route URLs, nested navigation active
-states, the 404 page, and mobile navigation below 48em. Open navigation with the
+Check public pages, catalog details, account forms, invalid recovery links,
+the 404 page, and mobile navigation below 48em. Open dashboard navigation with the
 keyboard, select a destination, and confirm it closes. Keep the page heading
 hierarchy and link labels meaningful as placeholders become working features.
 Run `pnpm check` before deployment for the existing deployment dry run.
