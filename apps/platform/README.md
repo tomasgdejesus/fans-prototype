@@ -33,6 +33,17 @@ pnpm db:migrate
 pnpm db:studio
 ```
 
+## Authentication core
+
+Better Auth is mounted at `/api/auth/*`. Set `BETTER_AUTH_URL` to the application's exact
+origin (normally `http://localhost:5173` locally), and put a secret generated with
+`openssl rand -base64 32` in `apps/platform/.dev.vars` as `BETTER_AUTH_SECRET`.
+Missing or invalid configuration returns HTTP 503. 
+
+Email/password signup, login, sessions, and logout are enabled. The standard
+signup endpoint still takes a `name`; this corresponds to display name/default of FANS user.
+`platformRole` and `status` are server-owned.
+
 ## Testing
 
 ```bash
@@ -47,7 +58,12 @@ Frontend tests use jsdom. The primary Hono suite runs in Node without database c
 TEST_DATABASE_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans pnpm test:db
 ```
 
-These tests cover native type round trips, amount/currency checks, composite foreign keys, duplicate webhook events, transaction rollback, and database readiness. Fixtures are rolled back. Integration tests do not fall back to application credentials or run migrations automatically. Re-running `pnpm db:migrate` should apply no additional changes; `pnpm db:generate` should find no schema changes on a clean checkout.
+These tests cover database constraints and Better Auth's signup, login, sessions,
+logout, and origin checks. Database fixtures are rolled back; auth tests delete
+their unique test users after each case because HTTP requests use separate
+connections. Tests do not fall back to application credentials or run migrations
+automatically. Re-running `pnpm db:migrate` should apply no additional changes;
+`pnpm db:generate` should find no schema changes on a clean checkout.
 
 ## Production preparation
 
@@ -60,3 +76,7 @@ pnpm --dir apps/platform exec wrangler secret put DATABASE_URL --env production
 ```
 
 Local `.dev.vars` values are not uploaded as production secrets. 
+
+Before enabling authentication in production, set `BETTER_AUTH_URL` to the HTTPS
+application origin and configure `BETTER_AUTH_SECRET` in the production Worker.
+Configure shared rate-limit storage; the default in-memory limiter is per isolate.

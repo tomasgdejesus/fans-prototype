@@ -1,0 +1,142 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import app from "../app";
+import * as authModule from "../auth";
+import { withDatabase, type Database } from "../db/client";
+import * as schema from "../db/schema";
+
+vi.mock("../db/client", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../db/client")>(),
+  withDatabase: vi.fn(),
+}));
+
+const origin = "http://localhost:5173";
+const bindings = {
+  DATABASE_URL: "postgresql://unused:unused@localhost/unused",
+  BETTER_AUTH_URL: origin,
+  BETTER_AUTH_SECRET: "test-only-secret-with-at-least-32-characters",
+};
+
+let pool: Pool;
+let db: Database;
+let events: string[];
+
+async function useTestDatabase<T>(url: string | undefined, run: (db: Database) => Promise<T>): Promise<T> {
+  expect(url).toBe(bindings.DATABASE_URL);
+  events.push("open");
+  try { return await run(db); }
+  finally { events.push("close"); }
+}
+
+beforeEach(() => {
+  // The real Drizzle adapter and Better Auth handle non-database endpoints.
+  // Any unexpected SQL fails immediately instead of opening a connection.
+  pool = new Pool();
+  vi.spyOn(pool, "query").mockImplementation(() => { throw new Error("Unexpected SQL in the primary auth suite."); });
+  db = drizzle({ client: pool, schema });
+  events = [];
+  vi.mocked(withDatabase).mockImplementation(useTestDatabase);
+});
+
+afterEach(async () => {
+  await pool.end();
+  vi.restoreAllMocks();
+  vi.mocked(withDatabase).mockReset();
+});
+
+describe("Better Auth HTTP integration", () => {
+  it("mounts the real Better Auth health endpoint", async () => {
+    const response = await app.request(`${origin}/api/auth/ok`, {}, bindings);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(events).toEqual(["open", "close"]);
+  });
+
+  it("returns no session without a cookie", async () => {
+    const response = await app.request(`${origin}/api/auth/get-session`, {}, bindings);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toBeNull();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("keeps unknown auth paths inside Better Auth", async () => {
+    const response = await app.request(`${origin}/api/auth/does-not-exist`, {}, bindings);
+    expect(response.status).toBe(404);
+    expect(withDatabase).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { path: "/sign-out", requestOrigin: "https://untrusted.example", body: {} },
+    {
+      path: "/sign-up/email", requestOrigin: origin,
+      body: {
+        name: "FANS user", email: "test@example.invalid", password: "test-only-long-password-123!",
+        callbackURL: "https://untrusted.example/steal",
+      },
+    },
+  ])("rejects an untrusted origin or callback on $path before querying the database", async ({ path, requestOrigin, body }) => {
+    const response = await app.request(`${origin}/api/auth${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: requestOrigin, cookie: "fixture=old" },
+      body: JSON.stringify(body),
+    }, bindings);
+    expect(response.status).toBe(403);
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {},
+    { ...bindings, DATABASE_URL: undefined },
+    { ...bindings, BETTER_AUTH_SECRET: undefined },
+    { ...bindings, BETTER_AUTH_SECRET: "short" },
+    { ...bindings, BETTER_AUTH_URL: "not-a-url" },
+    { ...bindings, BETTER_AUTH_URL: "https://user:password@example.com" },
+    { ...bindings, BETTER_AUTH_URL: "https://example.com/api/auth" },
+    { ...bindings, BETTER_AUTH_URL: "file:///tmp/auth" },
+  ])("rejects missing or invalid configuration before opening the database", async (env) => {
+    const response = await app.request(`${origin}/api/auth/ok`, {}, env);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Authentication is unavailable." });
+    expect(withDatabase).not.toHaveBeenCalled();
+  });
+
+  it("forwards the raw request and preserves the handler's status and cookies", async () => {
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET });
+    vi.spyOn(auth, "handler").mockImplementation(async (request) => {
+      events.push("handler");
+      expect(request.method).toBe("POST");
+      expect(request.headers.get("cookie")).toBe("fixture=old");
+      expect(await request.json()).toEqual({ email: "test@example.invalid" });
+      events.push("finished");
+      const response = new Response("accepted", { status: 202 });
+      response.headers.append("set-cookie", "fixture=new; Path=/; HttpOnly");
+      response.headers.append("set-cookie", "fixture-preference=remember; Path=/; HttpOnly");
+      return response;
+    });
+    vi.spyOn(authModule, "createAuth").mockReturnValue(auth);
+
+    const response = await app.request(`${origin}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: "fixture=old" },
+      body: JSON.stringify({ email: "test@example.invalid" }),
+    }, bindings);
+
+    expect(response.status).toBe(202);
+    expect(await response.text()).toBe("accepted");
+    expect(response.headers.getSetCookie()).toEqual([
+      "fixture=new; Path=/; HttpOnly",
+      "fixture-preference=remember; Path=/; HttpOnly",
+    ]);
+    expect(events).toEqual(["open", "handler", "finished", "close"]);
+  });
+
+  it("does not expose database errors or secrets", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(withDatabase).mockRejectedValue(new Error(`${bindings.DATABASE_URL} ${bindings.BETTER_AUTH_SECRET}`));
+    const response = await app.request(`${origin}/api/auth/ok`, {}, bindings);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Authentication is unavailable." });
+    expect(console.error).toHaveBeenCalledWith("Authentication request failed.");
+  });
+});

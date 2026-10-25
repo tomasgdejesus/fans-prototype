@@ -8,6 +8,13 @@
       "when": 1792729966149,
       "tag": "0000_overjoyed_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792897200000,
+      "tag": "0001_updated_at_triggers",
+      "breakpoints": true
     }
   ]
 }
