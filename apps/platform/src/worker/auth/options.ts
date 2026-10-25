@@ -1,5 +1,14 @@
 import type { BetterAuthOptions } from "better-auth";
 
+/*
+TODO:
+- multiple base URLs if needed
+- secondary storage (e.g. Cloudflare KV, if useful)
+- OAuth social providers
+- plugins that are useful
+- rate limiting
+*/
+
 // Shared by the runtime factory and any future schema-generation entry point.
 export const authOptions = {
   appName: "FANS",
