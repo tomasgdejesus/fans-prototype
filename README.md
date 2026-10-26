@@ -48,7 +48,8 @@ Run all commands from the repository root.
 
 ## Local Dev Database
 
-The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL in Docker; `pnpm db:down` stops it while retaining its data. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
+The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL in Docker; `pnpm db:down` stops it while retaining its data.
+`docker compose down --volumes` deletes volume. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
 
 When first applying the PostgreSQL patch, run `pnpm install --no-frozen-lockfile` and commit the updated `pnpm-lock.yaml`. Registry access was unavailable when preparing the patch, so its new `pg` dependencies are not yet resolved in the supplied lockfile. Subsequent clean installs can use the frozen command above after that lockfile is committed.
 
