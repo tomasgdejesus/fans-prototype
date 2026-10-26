@@ -1,8 +1,12 @@
 import { screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { authClient } from "../../../lib/auth-client";
 import LoginPage from "../../../routes/login/page";
 import { renderApp } from "../../helpers/render-app";
+
+beforeEach(() => { vi.spyOn(authClient, "getSession").mockResolvedValue(null); });
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe("LoginPage", () => {
   it("shows account entry links", () => {

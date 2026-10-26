@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authClient, type AuthResult } from "../../lib/auth-client";
 import ForgotPasswordPage from "../../routes/forgot-password/page";
 import LoginPage from "../../routes/login/page";
+import RegisterPage from "../../routes/register/page";
 import ResetPasswordPage from "../../routes/reset-password/page";
 import VerifyEmailPage from "../../routes/verify-email/page";
 import { renderApp } from "../helpers/render-app";
@@ -12,12 +13,14 @@ import { renderApp } from "../helpers/render-app";
 beforeEach(() => {
   authClient.configured = true;
   authClient.canResendVerification = true;
+  authClient.canRequestPasswordReset = true;
   vi.spyOn(authClient, "getSession").mockResolvedValue(null);
 });
 
 afterEach(() => {
-  authClient.configured = false;
+  authClient.configured = true;
   authClient.canResendVerification = false;
+  authClient.canRequestPasswordReset = false;
   vi.restoreAllMocks();
 });
 
@@ -31,7 +34,7 @@ describe("public account flows", () => {
   });
 
   it("returns signed-in visitors to their intended checkout", async () => {
-    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1" });
+    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: false });
     renderApp(
       <MemoryRouter initialEntries={["/login?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class"]}>
         <Routes>
@@ -57,7 +60,7 @@ describe("public account flows", () => {
 
   it("logs in before continuing to the intended destination", async () => {
     const signIn = vi.spyOn(authClient, "signIn").mockImplementation(async () => {
-      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1" });
+      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: false });
       return { ok: true };
     });
     renderApp(
@@ -75,6 +78,38 @@ describe("public account flows", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
     expect(await screen.findByText("Authenticated checkout")).toBeInTheDocument();
     expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" });
+  });
+
+  it("registers with email and passwords before continuing checkout", async () => {
+    const register = vi.spyOn(authClient, "register").mockImplementation(async () => {
+      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "new-user", platformRole: "user", status: "active", emailVerified: false });
+      return { ok: true };
+    });
+    renderApp(
+      <MemoryRouter initialEntries={["/register?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class"]}>
+        <Routes>
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/checkout" element={<p>Registered checkout</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Create account" })).toBeEnabled());
+    expect(screen.queryByLabelText(/Full name/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeDisabled();
+    await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
+    await user.type(screen.getByLabelText(/^Password/), "example-password");
+    await user.type(screen.getByLabelText(/Confirm password/), "example-password");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByText("Registered checkout")).toBeInTheDocument();
+    expect(register).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" });
+  });
+
+  it("disables recovery requests while email delivery is unavailable", () => {
+    authClient.canRequestPasswordReset = false;
+    renderApp(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
+    expect(screen.getByText(/Password recovery is not available yet/)).toBeInTheDocument();
   });
 
   it("does not claim an email was sent when the request fails", async () => {

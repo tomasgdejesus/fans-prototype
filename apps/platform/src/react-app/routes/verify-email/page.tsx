@@ -1,9 +1,11 @@
 import { Alert, Anchor, Button, Text } from "@mantine/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 import { AuthCard, AuthError } from "../../features/auth/components/auth-card";
 import { EmailRequestForm } from "../../features/auth/components/email-request-form";
+import { broadcastSessionChange, refreshPublicSession } from "../../features/auth/session";
 import { linkError } from "../../features/auth/link-error";
 import { accountPath, allowedDestination } from "../../features/auth/navigation";
 import { authClient, type AuthFailure } from "../../lib/auth-client";
@@ -16,6 +18,7 @@ export default function VerifyEmailPage() {
 
 function VerifyEmailForm({ token, callbackError, destination }: { token: string; callbackError: AuthFailure | null; destination: string }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<AuthFailure | null>(callbackError);
   const [done, setDone] = useState(false);
   const [pending, setPending] = useState(false);
@@ -27,7 +30,11 @@ function VerifyEmailForm({ token, callbackError, destination }: { token: string;
     setError(null);
     try {
       const result = await authClient.verifyEmail({ token });
-      if (result.ok) setDone(true);
+      if (result.ok) {
+        setDone(true);
+        broadcastSessionChange();
+        await refreshPublicSession(queryClient).catch(() => undefined);
+      }
       else setError(result.reason);
     } catch { setError("failed"); }
     finally { setPending(false); }

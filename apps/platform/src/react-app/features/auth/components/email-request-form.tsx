@@ -10,7 +10,7 @@ export function EmailRequestForm({ kind, destination }: { kind: "recovery" | "ve
   const { t } = useTranslation();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<AuthFailure | null>(null);
-  const permitted = authClient.configured && (kind === "recovery" || authClient.canResendVerification);
+  const permitted = authClient.configured && (kind === "recovery" ? authClient.canRequestPasswordReset : authClient.canResendVerification);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ email: string }>({ defaultValues: { email: "" } });
 
   async function submit({ email }: { email: string }) {
@@ -31,7 +31,7 @@ export function EmailRequestForm({ kind, destination }: { kind: "recovery" | "ve
   return (
     <Stack>
       <AuthError reason={error} />
-      {kind === "verification" && authClient.configured && !permitted && <Alert>{t("publicPages.auth.resendUnavailable")}</Alert>}
+      {authClient.configured && !permitted && <Alert>{t(kind === "recovery" ? "publicPages.auth.recoveryUnavailable" : "publicPages.auth.resendUnavailable")}</Alert>}
       <form onSubmit={handleSubmit(submit)} noValidate>
         <Stack>
           <TextInput label={t("publicPages.auth.email")} type="email" autoComplete="email" required error={errors.email?.message}

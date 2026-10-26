@@ -1,6 +1,7 @@
 import { Anchor, AppShell, Group, NavLink, ScrollArea, Stack } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink as RouterNavLink, Outlet } from "react-router";
+import { SignOutButton } from "../../features/auth/components/sign-out-button";
 import { LanguageSwitcher } from "../../components/language-switcher";
 
 const links = ["overview", "learners", "courses", "enrollments", "certificates", "orders"] as const;
@@ -12,7 +13,7 @@ export default function AdminLayout() {
       <AppShell.Header>
         <Group h="100%" px="lg" justify="space-between">
           <Anchor component={Link} to="/admin" fw={700} size="lg" underline="never">{t("routes.admin.title")}</Anchor>
-          <LanguageSwitcher />
+          <Group><LanguageSwitcher /><SignOutButton /></Group>
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="md">

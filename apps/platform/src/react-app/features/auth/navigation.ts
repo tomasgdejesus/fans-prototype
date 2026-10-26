@@ -12,12 +12,15 @@ function containsUnsafeCharacters(value: string) {
 export function allowedDestination(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || containsUnsafeCharacters(value)) return defaultDestination;
   try {
+    const requestedPath = decodeURIComponent(value.split(/[?#]/, 1)[0]);
+    if (requestedPath.split("/").some((segment) => segment === "." || segment === "..")) return defaultDestination;
     const url = new URL(value, "https://fans.invalid");
     const path = decodeURIComponent(url.pathname);
     if (url.origin !== "https://fans.invalid" || containsUnsafeCharacters(path)) return defaultDestination;
     const allowed = /^\/dashboard(?:\/[a-zA-Z0-9_-]+)*\/?$/.test(path)
       || /^\/catalog(?:\/[a-zA-Z0-9_-]+)?\/?$/.test(path)
-      || path === "/checkout";
+      || /^\/admin(?:\/[a-zA-Z0-9_-]+)*\/?$/.test(path)
+      || path === "/checkout" || path === "/checkout/return";
     return allowed ? `${url.pathname}${url.search}${url.hash}` : defaultDestination;
   } catch {
     return defaultDestination;

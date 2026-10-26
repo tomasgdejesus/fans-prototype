@@ -1,14 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { authClient } from "../../lib/auth-client";
-
-export const publicSessionKey = ["auth", "session"] as const;
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { publicSessionOptions } from "./session";
 
 export function usePublicSession() {
-  return useQuery({
-    queryKey: publicSessionKey,
-    queryFn: () => authClient.getSession(),
-    enabled: authClient.configured,
-    retry: false,
-    staleTime: 30_000,
-  });
+  const queryClient = useQueryClient();
+  return useQuery(publicSessionOptions(queryClient));
 }

@@ -7,8 +7,12 @@ export const publicPages = {
   auth: {
     oauth: { google: "Continue with Google", emailAlternative: "or continue with email" },
     unavailable: "Account services are not available in this prototype. You can browse the catalog, but account forms cannot be submitted yet.",
-    sessionError: "We could not check your session. Please reload the page and try again.",
+    sessionError: "We could not check your session. Please try again.",
     checking: "Checking your session…",
+    retry: "Try again", signOut: "Sign out",
+    inactiveTitle: "Account unavailable", inactiveDescription: "This account is not active. Contact FANS for assistance or sign out to use another account.",
+    deniedTitle: "Access denied", deniedDescription: "Your account does not have permission to access this page.",
+    recoveryUnavailable: "Password recovery is not available yet. Contact FANS if you need help accessing your account.",
     email: "Email address", password: "Password", newPassword: "New password", confirmPassword: "Confirm password",
     togglePassword: "Show or hide password",
     required: "This field is required.", invalidEmail: "Enter a valid email address.", passwordHint: "Use at least 8 characters.", shortPassword: "Use at least 8 characters.", passwordMismatch: "Passwords must match.",

@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { LanguageSwitcher } from "../components/language-switcher";
+import { SignOutButton } from "../features/auth/components/sign-out-button";
 import { accountPath, allowedDestination } from "../features/auth/navigation";
 import { usePublicSession } from "../features/auth/use-public-session";
 import classes from "./public-layout.module.css";
@@ -27,7 +28,10 @@ export default function PublicLayout() {
             <Anchor component={Link} to="/" fw={700} size="xl" underline="never">{t("common.brand")}</Anchor>
             <Group component="nav" aria-label={t("publicPages.navigation.label")} gap="md">
               <Anchor component={NavLink} to="/catalog">{t("routes.catalog.title")}</Anchor>
-              {session.data ? <Button component={Link} to="/dashboard" variant="light" size="xs">{t("common.actions.dashboard")}</Button> : (
+              {session.data ? <>
+                <Button component={Link} to="/dashboard" variant="light" size="xs">{t("common.actions.dashboard")}</Button>
+                <SignOutButton />
+              </> : (
                 <>
                   <Anchor component={NavLink} to={accountPath("/login", destination)}>{t("common.actions.logIn")}</Anchor>
                   <Button component={Link} to={accountPath("/register", destination)} variant="light" size="xs">{t("publicPages.navigation.register")}</Button>

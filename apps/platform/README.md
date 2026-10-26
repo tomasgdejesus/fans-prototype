@@ -44,6 +44,14 @@ Email/password signup, login, sessions, and logout are enabled. The standard
 signup endpoint still takes a `name`; this corresponds to display name/default of FANS user.
 `platformRole` and `status` are server-owned.
 
+The browser uses same-origin Better Auth requests and one TanStack Query session
+cache. Signup supplies `FANS user` as the internal display name. Logout and account
+changes cancel requests and clear other query/mutation caches. Sessions refresh on
+route entry, window focus, and every minute; auth changes also notify other tabs
+when BroadcastChannel is available.
+
+
+
 ## Testing
 
 ```bash

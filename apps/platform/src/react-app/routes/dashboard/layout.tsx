@@ -2,6 +2,7 @@ import { Anchor, AppShell, Burger, Container, Group, NavLink, ScrollArea, Stack,
 import { useDisclosure } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink as RouterNavLink, Outlet } from "react-router";
+import { SignOutButton } from "../../features/auth/components/sign-out-button";
 import { LanguageSwitcher } from "../../components/language-switcher";
 
 const links = [
@@ -25,7 +26,7 @@ export default function DashboardLayout() {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label={opened ? t("dashboard.navigation.close") : t("dashboard.navigation.open")} aria-controls="dashboard-navigation" aria-expanded={opened} />
             <Anchor component={Link} to="/" fw={700} size="lg" underline="never">{t("common.brand")}</Anchor>
           </Group>
-          <LanguageSwitcher />
+          <Group><LanguageSwitcher /><SignOutButton /></Group>
         </Group>
       </AppShell.Header>
       <AppShell.Navbar component="div" id="dashboard-navigation" p="md">

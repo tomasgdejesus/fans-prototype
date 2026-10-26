@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { authClient, type AuthFailure } from "../../../lib/auth-client";
 import { accountPath, allowedDestination } from "../navigation";
-import { publicSessionKey, usePublicSession } from "../use-public-session";
+import { usePublicSession } from "../use-public-session";
+import { broadcastSessionChange, refreshPublicSession } from "../session";
 import { AuthCard, AuthError } from "./auth-card";
 import { OAuthButtons } from "./oauth-buttons";
 
@@ -34,8 +35,8 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
         ? await authClient.register({ email: values.email.trim(), password: values.password })
         : await authClient.signIn({ email: values.email.trim(), password: values.password });
       if (!result.ok) { setError(result.reason); return; }
-      const current = await authClient.getSession();
-      queryClient.setQueryData(publicSessionKey, current);
+      broadcastSessionChange();
+      const current = await refreshPublicSession(queryClient);
       if (current) void navigate(destination, { replace: true });
       else if (isRegister) setRegistered(true);
       else setError("failed");
@@ -47,7 +48,12 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
   return (
     <AuthCard title={t(`auth.${mode}.title`)} description={t(`auth.${mode}.description`)}>
       {session.isLoading && <Text role="status">{t("publicPages.auth.checking")}</Text>}
-      {session.isError && <Alert color="red" role="alert">{t("publicPages.auth.sessionError")}</Alert>}
+      {session.isError && <Alert color="red" role="alert">
+        <Stack gap="xs">
+          {t("publicPages.auth.sessionError")}
+          <Button onClick={() => void session.refetch()} loading={session.isFetching}>{t("publicPages.auth.retry")}</Button>
+        </Stack>
+      </Alert>}
       <AuthError reason={error} />
       {error === "verificationRequired" && <Anchor component={Link} to={accountPath("/verify-email", destination)}>{t("routes.verifyEmail.title")}</Anchor>}
       {!registered && <OAuthButtons providers={[{ id: "google", label: t("publicPages.auth.oauth.google") }]} />}

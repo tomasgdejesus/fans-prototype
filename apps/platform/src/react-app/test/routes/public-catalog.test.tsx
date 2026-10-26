@@ -1,10 +1,14 @@
 import { screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { authClient } from "../../lib/auth-client";
 import { i18n } from "../../i18n";
 import CatalogPage from "../../routes/catalog/page";
 import ProductPage from "../../routes/catalog/[productId]/page";
 import { renderApp } from "../helpers/render-app";
+
+beforeEach(() => { vi.spyOn(authClient, "getSession").mockResolvedValue(null); });
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe("public catalog", () => {
   it("falls back to English for deferred Spanish product labels", async () => {
@@ -15,13 +19,13 @@ describe("public catalog", () => {
     expect(screen.getByText(/These are sample offerings and prices/)).toBeInTheDocument();
   });
 
-  it("preserves the selected product through account entry", () => {
+  it("preserves the selected product through account entry", async () => {
     renderApp(
       <MemoryRouter initialEntries={["/catalog/servsafe-class"]}>
         <Routes><Route path="/catalog/:productId" element={<ProductPage />} /></Routes>
       </MemoryRouter>,
     );
-    const href = screen.getByRole("link", { name: "Continue with this class" }).getAttribute("href")!;
+    const href = (await screen.findByRole("link", { name: "Continue with this class" })).getAttribute("href")!;
     const url = new URL(href, "https://fans.invalid");
     expect(url.pathname).toBe("/login");
     expect(url.searchParams.get("returnTo")).toBe("/checkout?productId=servsafe-class");
