@@ -7,19 +7,22 @@ export async function withTestDatabase<T>(
   run: (db: Database) => Promise<T>,
 ): Promise<T> {
   const { client, db } = createDatabaseConnection(connectionString);
-  let operationFailed = false;
+  let outcome: { ok: true; value: T } | { ok: false; error: unknown };
+
   try {
     await client.connect();
-    return await run(db);
+    outcome = { ok: true, value: await run(db) };
   } catch (error) {
-    operationFailed = true;
-    throw error;
-  } finally {
-    try {
-      await client.end();
-    } catch (error) {
-      if (!operationFailed) throw error;
-      console.error("PostgreSQL test connection cleanup failed.");
-    }
+    outcome = { ok: false, error };
   }
+
+  try {
+    await client.end();
+  } catch (error) {
+    if (outcome.ok) throw error;
+    console.error("PostgreSQL test connection cleanup failed.");
+  }
+
+  if (!outcome.ok) throw outcome.error;
+  return outcome.value;
 }
