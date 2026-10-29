@@ -143,6 +143,13 @@ describe("session notifications during sign-in", () => {
     expect(screen.queryByText("Authenticated dashboard")).not.toBeInTheDocument();
   });
 
+  it("still displays a failure when a completed login refresh returns no session", async () => {
+    renderLogin();
+    await submitLogin();
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not complete that request. Please try again.");
+    expect(screen.queryByText("Authenticated dashboard")).not.toBeInTheDocument();
+  });
+
   it("still displays a real session-check failure after successful credential submission", async () => {
     vi.mocked(authClient.getSession).mockResolvedValueOnce(null).mockRejectedValue(new Error("Service unavailable"));
     renderLogin();

@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { CancelledError, QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authClient, type PublicSession } from "../../../lib/auth-client";
 import { clearPublicSession, publicSessionKey, publicSessionOptions, refreshPublicSession } from "../../../features/auth/session";
@@ -47,6 +47,21 @@ describe("session cache", () => {
     await refreshPublicSession(client);
     resolveOld(account("old"));
     await obsolete;
+    expect(client.getQueryData(publicSessionKey)).toEqual(account("new"));
+  });
+
+  it.each([null, account("old")])("rejects a superseded refresh instead of returning cached data: %j", async (previous) => {
+    client.setQueryData(publicSessionKey, previous);
+    let resolveOld!: (value: PublicSession) => void;
+    const oldResult = new Promise<PublicSession>((resolve) => { resolveOld = resolve; });
+    vi.mocked(authClient.getSession).mockReturnValueOnce(oldResult).mockResolvedValue(account("new"));
+    const obsolete = expect(refreshPublicSession(client)).rejects.toBeInstanceOf(CancelledError);
+    await vi.waitFor(() => expect(authClient.getSession).toHaveBeenCalledOnce());
+
+    expect(await refreshPublicSession(client)).toEqual(account("new"));
+    await obsolete;
+    resolveOld(account("old"));
+    await oldResult;
     expect(client.getQueryData(publicSessionKey)).toEqual(account("new"));
   });
 

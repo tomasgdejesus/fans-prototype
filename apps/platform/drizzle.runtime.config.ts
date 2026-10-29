@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { defineConfig } from "drizzle-kit";
+import { URL } from "node:url";
 import config from "./drizzle.config";
 
 // Node-only migration/Studio configuration. Never fall back to the application's

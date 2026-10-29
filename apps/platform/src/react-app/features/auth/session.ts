@@ -1,4 +1,4 @@
-import { queryOptions, type QueryClient } from "@tanstack/react-query";
+import { CancelledError, queryOptions, type QueryClient } from "@tanstack/react-query";
 import { authClient, type PublicSession } from "../../lib/auth-client";
 
 export const publicSessionKey = ["auth", "session"] as const;
@@ -15,18 +15,20 @@ async function clearAccountCache(queryClient: QueryClient) {
   queryClient.getMutationCache().clear();
 }
 
+async function readPublicSession(queryClient: QueryClient, signal: AbortSignal) {
+  const next = await authClient.getSession(signal);
+  signal.throwIfAborted();
+  const previous = queryClient.getQueryData<PublicSession | null>(publicSessionKey);
+  if (previous?.userId !== next?.userId || previous?.status !== next?.status
+    || previous?.platformRole !== next?.platformRole) await clearAccountCache(queryClient);
+  signal.throwIfAborted();
+  return next;
+}
+
 export function publicSessionOptions(queryClient: QueryClient) {
   return queryOptions({
     queryKey: publicSessionKey,
-    queryFn: async ({ signal }) => {
-      const next = await authClient.getSession(signal);
-      signal.throwIfAborted();
-      const previous = queryClient.getQueryData<PublicSession | null>(publicSessionKey);
-      if (previous?.userId !== next?.userId || previous?.status !== next?.status
-        || previous?.platformRole !== next?.platformRole) await clearAccountCache(queryClient);
-      signal.throwIfAborted();
-      return next;
-    },
+    queryFn: ({ signal }) => readPublicSession(queryClient, signal),
     enabled: authClient.configured,
     retry: false,
     staleTime: 30_000,
@@ -39,7 +41,19 @@ export function publicSessionOptions(queryClient: QueryClient) {
 export async function refreshPublicSession(queryClient: QueryClient) {
   // Prevent a request started before login from overwriting the new session.
   await queryClient.cancelQueries({ queryKey: publicSessionKey, exact: true });
-  return queryClient.fetchQuery({ ...publicSessionOptions(queryClient), staleTime: 0 });
+  const request: { signal?: AbortSignal } = {};
+  const next = await queryClient.fetchQuery({
+    ...publicSessionOptions(queryClient),
+    staleTime: 0,
+    queryFn: ({ signal }) => {
+      request.signal = signal;
+      return readPublicSession(queryClient, signal);
+    },
+  });
+  // A cancelled fetch can resolve with reverted cache data, including null.
+  // Never present that old value as the result of this refresh.
+  if (request.signal?.aborted) throw new CancelledError();
+  return next;
 }
 
 export async function clearPublicSession(queryClient: QueryClient) {
