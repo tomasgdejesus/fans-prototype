@@ -4,23 +4,9 @@ import * as schema from "./schema";
 
 export type Database = NodePgDatabase<typeof schema>;
 
-function createDatabase(client: Client): Database {
-  return drizzle({ client, schema });
-}
-
-// DATABASE_URL must point to an external transaction pooler: local PgBouncer now,
-// or an independently configured pooled endpoint in staging/production. This
-// helper does not create a pool or infer pooling from the hostname.
-//
-// Each call owns one short-lived connection TO the pooler. The pooler reuses
-// PostgreSQL backend connections across requests; Workers must not share live
-// clients or pools between requests. Reuse this db within the callback and await
-// all queries/transactions before returning. Use DATABASE_MIGRATION_URL directly
-// from Node tooling (.dev.vars) for migrations; never pass it to this helper.
-export async function withDatabase<T>(
-  connectionString: string | undefined,
-  run: (db: Database) => Promise<T>,
-): Promise<T> {
+// Build an unconnected client/database pair; the caller owns its lifecycle.
+// DATABASE_URL targets an external transaction pooler, never the migration URL.
+export function createDatabaseConnection(connectionString: string | undefined) {
   if (!connectionString) throw new Error("DATABASE_URL is not configured.");
 
   const client = new Client({
@@ -43,22 +29,20 @@ export async function withDatabase<T>(
     });
   });
 
-  let operationFailed = false;
-  try {
-    await client.connect();
-    // Explicit transactions pin one backend until commit/rollback. Do not depend
-    // on session SET state, LISTEN, or session locks across transactions.
-    return await run(createDatabase(client));
-  } catch (error) {
-    operationFailed = true;
-    throw error;
-  } finally {
-    try {
-      await client.end();
-    } catch (error) {
-      // Cleanup must not hide the original connection/query/transaction error.
-      if (!operationFailed) throw error;
-      console.error("PostgreSQL connection cleanup failed.");
-    }
-  }
+  const db: Database = drizzle({ client, schema });
+  return { client, db };
+}
+
+// Worker HTTP adapter: invocation teardown owns socket cleanup. Explicit end()
+// caused late CloudflareSocket cancellation in local testing, so omit it here.
+// Await all database work before returning; never share clients across requests.
+// Node callers must own cleanup or inject a pool-backed runner through createApp.
+export async function withDatabase<T>(
+  connectionString: string | undefined,
+  run: (db: Database) => Promise<T>,
+): Promise<T> {
+  const { client, db } = createDatabaseConnection(connectionString);
+  await client.connect();
+  // Transactions pin one backend; session state must not span transactions.
+  return await run(db);
 }

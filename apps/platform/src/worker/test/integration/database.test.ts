@@ -4,9 +4,11 @@ import { eq, sql } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { Client } from "pg";
 import { v7 as uuidv7 } from "uuid";
-import app from "../../app";
-import { withDatabase } from "../../db/client";
+import { createApp } from "../../app";
+import { withTestDatabase } from "../helpers/database";
 import * as schema from "../../db/schema";
+
+const app = createApp(withTestDatabase);
 
 // Never fall back to application credentials: use an explicitly selected,
 // migrated development/test database. Each fixture is rolled back.
@@ -197,7 +199,7 @@ describe("PostgreSQL integration", () => {
   });
 
   it("pins a backend throughout each of multiple concurrent pooled transactions", async () => {
-    await Promise.all(Array.from({ length: 16 }, () => withDatabase(url, (database) =>
+    await Promise.all(Array.from({ length: 16 }, () => withTestDatabase(url, (database) =>
       database.transaction(async (tx) => {
         const before = await tx.execute<{ pid: number }>(sql`select pg_backend_pid() as pid`);
         await tx.execute(sql`select pg_sleep(0.02)`);
@@ -209,7 +211,7 @@ describe("PostgreSQL integration", () => {
 
   it("rolls back interactive transactions and reports database readiness", async () => {
     const id = uuidv7();
-    await withDatabase(url, async (database) => {
+    await withTestDatabase(url, async (database) => {
       await expect(database.transaction(async (tx) => {
         await tx.insert(schema.courses).values({ id, code: id, title: "Rollback", description: "Test" });
         throw new Error("Abort test transaction");

@@ -183,7 +183,7 @@ Shared test helpers and fixtures belong inside the applicable test tree. Add fea
 
 **Drizzle ORM** defines PostgreSQL tables under `src/worker/db/schema/`. Status checks, amount arithmetic, foreign keys, and existing domain boundaries remain enforced by the schema. 
 
-`src/worker/db/client.ts` isolates the `pg` driver and exports `withDatabase`. Each call opens a request-owned `pg.Client` to a transaction-pooled `DATABASE_URL` and closes it in `finally`. Local PgBouncer reuses backend connections; no driver pool is retained between Worker requests. Services should accept its typed `Database` argument. Interactive transactions use Drizzle's `db.transaction` callback. A future hosting adapter may pass a Hyperdrive connection string without changing table definitions or feature queries.
+`src/worker/db/client.ts` isolates the `pg` driver and exports `withDatabase`. Each Worker call opens a request-owned `pg.Client` to a transaction-pooled `DATABASE_URL`; invocation teardown owns socket cleanup. Local PgBouncer reuses backend connections; no driver pool is retained between Worker requests. Services should accept its typed `Database` argument. `createApp` accepts a database runner so Node tests can close clients explicitly and future persistent Node hosting can supply a process-owned pool. Interactive transactions use Drizzle's `db.transaction` callback. A future hosting adapter may pass a Hyperdrive connection string without changing table definitions or feature queries.
 
 PostgreSQL 18 Required. Assume UUIDs are UUIDv7.
 

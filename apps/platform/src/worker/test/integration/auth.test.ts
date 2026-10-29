@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Client } from "pg";
-import app from "../../app";
+import { createApp } from "../../app";
+import { withTestDatabase } from "../helpers/database";
+
+const app = createApp(withTestDatabase);
 
 // Exercise the production route and request-owned connections against an explicitly
 // selected, migrated test database. Never fall back to DATABASE_URL.
