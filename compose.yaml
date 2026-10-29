@@ -17,5 +17,22 @@ services:
       timeout: 3s
       retries: 15
 
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.26.1-p0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:6432:5432"
+    volumes:
+      - ./docker/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./docker/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    healthcheck:
+      # Exercise authentication and the backend, not just the listening socket.
+      test: ["CMD-SHELL", "PGPASSWORD=fans_local psql -h 127.0.0.1 -p 5432 -U fans -d fans -w -v ON_ERROR_STOP=1 -tAc 'SELECT 1'"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
 volumes:
   postgres_data:

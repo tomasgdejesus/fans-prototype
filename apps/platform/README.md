@@ -16,9 +16,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-After first applying the PostgreSQL patch, use `pnpm install --no-frozen-lockfile` once to resolve the new driver dependencies, and commit the resulting lockfile before using frozen installs.
-
-The example `DATABASE_URL` matches the local-only credentials in `compose.yaml`. The database port is bound to loopback. Keep Vite and Docker in the same development environment (for example, WSL with Docker Desktop integration). If port 5432 is occupied, change the Compose host port and the connection string together.
+In `apps/platform/.dev.vars`, use `DATABASE_URL` for PgBouncer (port 6432) and `DATABASE_MIGRATION_URL` for direct PostgreSQL access (port 5432). Both use the local credentials in `compose.yaml`; both ports bind to loopback. Update these two values in an existing `.dev.vars` while keeping its auth settings. Keep Vite and Docker in the same development environment (for example, WSL with Docker Desktop integration).
 
 Docker stores data in a named volume. `pnpm db:down` retains it; `docker compose down --volumes` deletes it. Removing `.wrangler/state/` does not reset PostgreSQL. Changing `POSTGRES_*` initialization settings does not change credentials in an existing database volume.
 
@@ -32,6 +30,8 @@ pnpm db:generate
 pnpm db:migrate
 pnpm db:studio
 ```
+
+Migrations and Studio require `DATABASE_MIGRATION_URL` from the environment or `.dev.vars`; they never fall back to the pooled application URL.
 
 ## Authentication core
 
@@ -63,10 +63,12 @@ Frontend tests use jsdom. The primary Hono suite runs in Node without database c
 
 ```bash
 # Bash / WSL; use the database created above, or a separate migrated test database.
-TEST_DATABASE_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans pnpm test:db
+TEST_DATABASE_URL='postgresql://fans:fans_local@127.0.0.1:6432/fans?sslmode=disable' \
+TEST_DATABASE_DIRECT_URL='postgresql://fans:fans_local@127.0.0.1:5432/fans?sslmode=disable' \
+pnpm test:db
 ```
 
-These tests cover database constraints and Better Auth's signup, login, sessions,
+Both URLs must select the same migrated test database. These tests cover pooled concurrent transactions, database constraints, and Better Auth's signup, login, sessions,
 logout, and origin checks. Database fixtures are rolled back; auth tests delete
 their unique test users after each case because HTTP requests use separate
 connections. Tests do not fall back to application credentials or run migrations
@@ -77,7 +79,7 @@ automatically. Re-running `pnpm db:migrate` should apply no additional changes;
 
 `vite build` selects Wrangler's production environment through `.env.production`; `pnpm deploy` builds and then deploys that flattened configuration. The production Worker is named `fans-platform`. Development uses the top-level `platform` configuration. Frontend `VITE_*` variables are public; database credentials must never use that prefix.
 
-Before database-backed production use, choose and provision PostgreSQL, migrate it with separate deployment credentials, and configure the runtime connection. For the current direct-connection adapter, set the Worker secret:
+Before database-backed production use, choose and provision PostgreSQL, migrate it with separate deployment credentials, and configure the runtime connection. Use a transaction-pooled endpoint for `DATABASE_URL` with verified TLS, and a direct endpoint for Node migration tooling via `DATABASE_MIGRATION_URL`. No hosted database or Hyperdrive resource is configured. Set the Worker secret:
 
 ```bash
 pnpm --dir apps/platform exec wrangler secret put DATABASE_URL --env production

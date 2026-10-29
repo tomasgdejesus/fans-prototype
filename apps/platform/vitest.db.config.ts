@@ -5,7 +5,8 @@ export default defineConfig({
     environment: "node",
     include: ["src/worker/test/integration/**/*.test.ts"],
     fileParallelism: false,
-    testTimeout: 15_000,
+    // Allow the pooled connection/query deadlines to report their own errors.
+    testTimeout: 30_000,
     hookTimeout: 15_000,
   },
 });

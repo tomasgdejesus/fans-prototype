@@ -48,10 +48,8 @@ Run all commands from the repository root.
 
 ## Local Dev Database
 
-The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL in Docker; `pnpm db:down` stops it while retaining its data.
+The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL and its transaction pooler (PgBouncer) in Docker; `pnpm db:down` stops it while retaining its data.
 `docker compose down --volumes` deletes volume. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
-
-When first applying the PostgreSQL patch, run `pnpm install --no-frozen-lockfile` and commit the updated `pnpm-lock.yaml`. Registry access was unavailable when preparing the patch, so its new `pg` dependencies are not yet resolved in the supplied lockfile. Subsequent clean installs can use the frozen command above after that lockfile is committed.
 
 ## Dependencies
 
@@ -71,7 +69,7 @@ Use `-D` for development tools. Add root-level tooling with `pnpm add -Dw <packa
 - Public frontend variables: `apps/platform/.env.local`, using the `VITE_` prefix. These values are visible in the browser.
 - Local Worker secrets: `apps/platform/.dev.vars`. Keep secrets out of Git.
 - Worker bindings: `apps/platform/wrangler.json`. Regenerate Worker types after changing bindings.
-- Drizzle migration credentials: exported `DATABASE_URL`, or the app's `.dev.vars` as a local fallback. Frontend `.env.local` is not a migration credential source.
+- Database URLs: `DATABASE_URL` uses the pooler (local port 6432); `DATABASE_MIGRATION_URL` connects directly (local port 5432). Set both in `apps/platform/.dev.vars`; exported migration credentials take precedence for Drizzle tooling.
 - Production builds select the production Worker using the tracked, non-secret `apps/platform/.env.production`. Production `DATABASE_URL` must be configured separately as a Worker secret before using database routes.
 
 Authenticate before the first deployment:

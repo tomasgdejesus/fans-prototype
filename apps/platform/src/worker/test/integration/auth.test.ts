@@ -3,10 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { Client } from "pg";
 import app from "../../app";
 
-// Exercise the production route and request-owned pools against an explicitly
+// Exercise the production route and request-owned connections against an explicitly
 // selected, migrated test database. Never fall back to DATABASE_URL.
 const url = process.env.TEST_DATABASE_URL;
-if (!url) throw new Error("Set TEST_DATABASE_URL to a migrated PostgreSQL test database.");
+const directUrl = process.env.TEST_DATABASE_DIRECT_URL;
+if (!url || !directUrl) throw new Error("Set TEST_DATABASE_URL (pooled) and TEST_DATABASE_DIRECT_URL (direct) to the same migrated PostgreSQL test database.");
 
 const origin = "http://localhost:5173";
 const password = "test-only-long-password-123!";
@@ -16,7 +17,7 @@ const bindings = {
   BETTER_AUTH_SECRET: "integration-test-only-secret-at-least-32-characters",
 };
 
-const client = new Client({ connectionString: url, connectionTimeoutMillis: 5_000 });
+const client = new Client({ connectionString: directUrl, connectionTimeoutMillis: 5_000 });
 let email: string;
 
 type AuthUser = {

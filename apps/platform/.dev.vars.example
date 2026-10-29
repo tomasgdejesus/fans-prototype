@@ -1,4 +1,7 @@
-DATABASE_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans
+# Application traffic uses the local transaction pooler.
+DATABASE_URL=postgresql://fans:fans_local@127.0.0.1:6432/fans?sslmode=disable
+# Drizzle migrations and Studio connect directly to PostgreSQL.
+DATABASE_MIGRATION_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans?sslmode=disable
 BETTER_AUTH_URL=http://localhost:5173
 # Generate a secret with: openssl rand -base64 32
 BETTER_AUTH_SECRET=

@@ -11,13 +11,14 @@ import * as schema from "../../db/schema";
 // Never fall back to application credentials: use an explicitly selected,
 // migrated development/test database. Each fixture is rolled back.
 const url = process.env.TEST_DATABASE_URL;
-if (!url) throw new Error("Set TEST_DATABASE_URL to a migrated PostgreSQL test database.");
+const directUrl = process.env.TEST_DATABASE_DIRECT_URL;
+if (!url || !directUrl) throw new Error("Set TEST_DATABASE_URL (pooled) and TEST_DATABASE_DIRECT_URL (direct) to the same migrated PostgreSQL test database.");
 
 let client: Client;
 let db: NodePgDatabase<typeof schema>;
 
 beforeEach(async () => {
-  client = new Client({ connectionString: url, connectionTimeoutMillis: 5_000 });
+  client = new Client({ connectionString: directUrl, connectionTimeoutMillis: 5_000 });
   await client.connect();
   await client.query("BEGIN");
   db = drizzle({ client, schema });
@@ -193,6 +194,17 @@ describe("PostgreSQL integration", () => {
     await expect(db.insert(schema.paymentEvents).values(event)).rejects.toMatchObject({
       cause: { code: "23505", constraint: "payment_events_provider_event_unique" },
     });
+  });
+
+  it("pins a backend throughout each of multiple concurrent pooled transactions", async () => {
+    await Promise.all(Array.from({ length: 16 }, () => withDatabase(url, (database) =>
+      database.transaction(async (tx) => {
+        const before = await tx.execute<{ pid: number }>(sql`select pg_backend_pid() as pid`);
+        await tx.execute(sql`select pg_sleep(0.02)`);
+        const after = await tx.execute<{ pid: number }>(sql`select pg_backend_pid() as pid`);
+        expect(after.rows[0].pid).toBe(before.rows[0].pid);
+      }),
+    )));
   });
 
   it("rolls back interactive transactions and reports database readiness", async () => {

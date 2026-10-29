@@ -16,7 +16,7 @@ const app = new Hono<WorkerEnv>()
 
     try {
       return await withDatabase(c.env.DATABASE_URL, async (db) => {
-        // Finish auth work before withDatabase closes this request's pool.
+        // Finish auth work before withDatabase closes this request's connection.
         const auth = createAuth(db, config);
         return await auth.handler(c.req.raw);
       });

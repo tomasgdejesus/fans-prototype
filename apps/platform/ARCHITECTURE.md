@@ -183,15 +183,15 @@ Shared test helpers and fixtures belong inside the applicable test tree. Add fea
 
 **Drizzle ORM** defines PostgreSQL tables under `src/worker/db/schema/`. Status checks, amount arithmetic, foreign keys, and existing domain boundaries remain enforced by the schema. 
 
-`src/worker/db/client.ts` isolates the `pg` driver and exports `withDatabase`. Connections belong to the current request and close in `finally`; no global pool is retained between Worker requests. Services should accept its typed `Database` argument. Interactive transactions use Drizzle's `db.transaction` callback. A future hosting adapter may pass a Hyperdrive connection string without changing table definitions or feature queries.
+`src/worker/db/client.ts` isolates the `pg` driver and exports `withDatabase`. Each call opens a request-owned `pg.Client` to a transaction-pooled `DATABASE_URL` and closes it in `finally`. Local PgBouncer reuses backend connections; no driver pool is retained between Worker requests. Services should accept its typed `Database` argument. Interactive transactions use Drizzle's `db.transaction` callback. A future hosting adapter may pass a Hyperdrive connection string without changing table definitions or feature queries.
 
 PostgreSQL 18 Required. Assume UUIDs are UUIDv7.
 
-**Drizzle Kit** uses a credential-free `drizzle.config.ts` for generation. The separate `drizzle.runtime.config.ts` loads migration credentials from exported `DATABASE_URL` or the app's `.dev.vars` fallback. Migrations are reviewed, committed, and explicitly applied with `db:migrate`, not during application startup or frontend builds.
+**Drizzle Kit** uses a credential-free `drizzle.config.ts` for generation. The separate `drizzle.runtime.config.ts` loads migration credentials from exported `DATABASE_MIGRATION_URL` or the app's existing `.dev.vars` fallback, separately from the pooled runtime URL. Migrations are reviewed, committed, and explicitly applied with `db:migrate`, not during application startup or frontend builds.
 
 The active migration directory is `drizzle/`; its baseline and metadata target an empty PostgreSQL database. Historical SQLite files are retained in the parent directory but are not part of the active history. No D1 data is automatically migrated. Docker Compose provides local PostgreSQL with a persistent named volume.
 
-Primary application tests remain independent of a running database. Opt-in PostgreSQL integration tests live in `src/worker/integration/`, require an explicit `TEST_DATABASE_URL`, and use a migrated development/test database. See the platform README for commands.
+Primary application tests remain independent of a running database. Opt-in PostgreSQL integration tests live in `src/worker/test/integration/`, require explicit pooled `TEST_DATABASE_URL` and direct `TEST_DATABASE_DIRECT_URL` values, and use a migrated development/test database. See the platform README for commands.
 
 Production builds select `env.production` through the non-secret `.env.production` file. Production database credentials are configured separately, never placed in `VITE_*` variables or committed Wrangler settings. No Neon or Hyperdrive resource is provisioned by this repository.
 
