@@ -1,6 +1,14 @@
 import type { TranslationResource } from "./en";
 
 export const es = {
+  validation: {
+    required: "Este campo es obligatorio.",
+    invalid: "Introduce un valor válido.",
+    invalidEmail: "Introduce un correo electrónico válido.",
+    passwordTooShort: "Usa al menos {{min}} caracteres.",
+    passwordTooLong: "Usa como máximo {{max}} caracteres.",
+    passwordMismatch: "Las contraseñas deben coincidir.",
+  },
   common: {
     brand: "FANS",
     language: {

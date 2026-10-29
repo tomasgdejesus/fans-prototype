@@ -1,17 +1,23 @@
 import { Alert, Anchor, Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { CancelledError, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
+import type { z } from "zod";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../../shared/constants/auth";
+import { loginInputSchema, type LoginInput } from "../../../../shared/contracts/auth";
 import { authClient, type AuthFailure } from "../../../lib/auth-client";
+import { validationMessage } from "../../../lib/validation";
+import { registrationFormSchema, type RegistrationFormValues } from "../form-schemas";
 import { accountPath, allowedDestination } from "../navigation";
 import { usePublicSession } from "../use-public-session";
 import { broadcastSessionChange, refreshPublicSession } from "../session";
 import { AuthCard, AuthError } from "./auth-card";
 import { OAuthButtons } from "./oauth-buttons";
 
-type Values = { email: string; password: string; confirmPassword: string };
+type Values = LoginInput | RegistrationFormValues;
 
 export function AccountForm({ mode }: { mode: "login" | "register" }) {
   const { t } = useTranslation();
@@ -23,8 +29,10 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
   const [error, setError] = useState<AuthFailure | null>(null);
   const [registered, setRegistered] = useState(false);
   const isRegister = mode === "register";
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<Values>({
-    defaultValues: { email: "", password: "", confirmPassword: "" },
+  const schema: z.ZodType<Values, Values> = isRegister ? registrationFormSchema : loginInputSchema;
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: isRegister ? { email: "", password: "", confirmPassword: "" } : { email: "", password: "" },
   });
 
   async function submit(values: Values) {
@@ -32,8 +40,8 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
     setError(null);
     try {
       const result = isRegister
-        ? await authClient.register({ email: values.email.trim(), password: values.password })
-        : await authClient.signIn({ email: values.email.trim(), password: values.password });
+        ? await authClient.register({ email: values.email, password: values.password })
+        : await authClient.signIn({ email: values.email, password: values.password });
       if (!result.ok) { setError(result.reason); return; }
       broadcastSessionChange();
       const current = await refreshPublicSession(queryClient);
@@ -66,15 +74,15 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
       ) : (
         <form onSubmit={handleSubmit(submit)} noValidate>
           <Stack>
-            <TextInput label={t("publicPages.auth.email")} type="email" autoComplete="email" required error={errors.email?.message}
-              {...register("email", { required: t("publicPages.auth.required"), pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: t("publicPages.auth.invalidEmail") } })} />
+            <TextInput label={t("publicPages.auth.email")} type="email" autoComplete="email" required error={validationMessage(errors.email?.message, t)}
+              {...register("email")} />
             <PasswordInput visibilityToggleFocusable visibilityToggleButtonProps={{ "aria-label": t("publicPages.auth.togglePassword") }}
               label={t("publicPages.auth.password")} autoComplete={isRegister ? "new-password" : "current-password"} required
-              description={isRegister ? t("publicPages.auth.passwordHint") : undefined} error={errors.password?.message}
-              {...register("password", { required: t("publicPages.auth.required"), ...(isRegister ? { minLength: { value: 8, message: t("publicPages.auth.shortPassword") } } : {}) })} />
+              description={isRegister ? t("publicPages.auth.passwordHint", { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH }) : undefined} error={validationMessage(errors.password?.message, t)}
+              {...register("password")} />
             {isRegister && <PasswordInput visibilityToggleFocusable visibilityToggleButtonProps={{ "aria-label": t("publicPages.auth.togglePassword") }}
-              label={t("publicPages.auth.confirmPassword")} autoComplete="new-password" required error={errors.confirmPassword?.message}
-              {...register("confirmPassword", { required: t("publicPages.auth.required"), validate: (value) => value === getValues("password") || t("publicPages.auth.passwordMismatch") })} />}
+              label={t("publicPages.auth.confirmPassword")} autoComplete="new-password" required error={validationMessage("confirmPassword" in errors ? errors.confirmPassword?.message : undefined, t)}
+              {...register("confirmPassword")} />}
             <Button type="submit" loading={isSubmitting} disabled={!authClient.configured || session.isLoading || session.isError}>{t(isRegister ? "publicPages.auth.register" : "publicPages.auth.signIn")}</Button>
           </Stack>
         </form>

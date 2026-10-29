@@ -104,8 +104,10 @@ apps/platform/
     │           └── payments.ts
     └── shared/
         ├── contracts/
-        │   └── courses.ts        # Shared Zod request schemas
+        │   ├── auth.ts           # Auth input schemas and inferred types
+        │   └── courses.ts        # Future course request schemas
         └── constants/
+            └── auth.ts           # Shared password limits
 ```
 
 ## Frontend: src/react-app/
@@ -147,8 +149,10 @@ Keep the Worker entry point small. Register typed Hono routes using composition 
 
 Shared code must be safe to import into both the browser and backend.
 
-- `contracts/`: Zod request schemas and types inferred from them.
-- `constants/`: shared values that have the same meaning across both environments.
+- `contracts/`: Zod request schemas and types inferred from them; auth inputs are in `auth.ts`.
+- `constants/`: shared values; `auth.ts` provides password limits for forms and Better Auth.
+
+Frontend confirmation schemas live in `react-app/features/auth/form-schemas.ts`; translated error display is in `react-app/lib/validation.ts`. Better Auth validates its own endpoints.
 
 Validate requests again on the backend. Shared validation supports forms; server-side authorization determines access.
 
@@ -158,7 +162,7 @@ Keep Drizzle tables and database row types in the backend. API inputs and respon
 
 ## Testing
 
-Vitest uses separate projects for the React application and backend:
+Vitest uses separate projects for the React application, backend, and shared contracts (`src/shared/test/`):
 
 ```text
 src/

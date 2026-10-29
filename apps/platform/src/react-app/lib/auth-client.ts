@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { inferAdditionalFields } from "better-auth/client/plugins";
+import type { EmailInput, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
 import type { Auth } from "../../worker/auth";
 import type { AuthSession } from "../../worker/env";
 
@@ -46,13 +47,13 @@ export interface PublicAuthClient {
   canRequestPasswordReset: boolean;
   canResendVerification: boolean;
   getSession(signal?: AbortSignal): Promise<PublicSession | null>;
-  signIn(input: { email: string; password: string }): Promise<AuthResult>;
-  register(input: { email: string; password: string }): Promise<AuthResult>;
+  signIn(input: LoginInput): Promise<AuthResult>;
+  register(input: RegistrationInput): Promise<AuthResult>;
   signOut(): Promise<AuthResult>;
-  requestPasswordReset(input: { email: string; redirectTo: string }): Promise<EmailRequestResult>;
-  resetPassword(input: { token: string; password: string }): Promise<AuthResult>;
+  requestPasswordReset(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
+  resetPassword(input: ResetPasswordInput): Promise<AuthResult>;
   verifyEmail(input: { token: string }): Promise<AuthResult>;
-  resendVerification(input: { email: string; redirectTo: string }): Promise<EmailRequestResult>;
+  resendVerification(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
 }
 
 export const authClient: PublicAuthClient = {

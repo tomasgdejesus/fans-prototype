@@ -21,11 +21,18 @@ export default defineConfig({
           exclude: ["src/worker/test/integration/**"],
         },
       },
+      {
+        test: {
+          name: "shared",
+          environment: "node",
+          include: ["src/shared/test/**/*.test.ts"],
+        },
+      },
     ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["src/react-app/**/*.{ts,tsx}", "src/worker/**/*.ts"],
+      include: ["src/react-app/**/*.{ts,tsx}", "src/worker/**/*.ts", "src/shared/**/*.ts"],
       exclude: [
         "src/**/*.d.ts",
         "src/**/test/**",

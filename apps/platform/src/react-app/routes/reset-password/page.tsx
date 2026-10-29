@@ -1,16 +1,18 @@
 import { Alert, Anchor, Button, PasswordInput, Stack } from "@mantine/core";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
 import { AuthCard, AuthError } from "../../features/auth/components/auth-card";
+import { resetPasswordFormSchema, type ResetPasswordFormValues } from "../../features/auth/form-schemas";
 import { broadcastSessionChange, refreshPublicSession } from "../../features/auth/session";
 import { linkError } from "../../features/auth/link-error";
 import { accountPath, allowedDestination } from "../../features/auth/navigation";
 import { authClient, type AuthFailure } from "../../lib/auth-client";
-
-type Values = { password: string; confirmPassword: string };
+import { validationMessage } from "../../lib/validation";
 
 export default function ResetPasswordPage() {
   const [search] = useSearchParams();
@@ -24,9 +26,12 @@ function ResetPasswordForm({ token, callbackError, destination }: { token: strin
   const [error, setError] = useState<AuthFailure | null>(callbackError ?? (token ? null : "invalidLink"));
   const [done, setDone] = useState(false);
   const invalid = error === "invalidLink" || error === "expiredLink" || error === "usedLink";
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<Values>({ defaultValues: { password: "", confirmPassword: "" } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordFormSchema),
+    defaultValues: { password: "", confirmPassword: "" },
+  });
 
-  async function submit({ password }: Values) {
+  async function submit({ password }: ResetPasswordFormValues) {
     if (!authClient.configured || !token || invalid || isSubmitting) return;
     setError(null);
     try {
@@ -48,11 +53,11 @@ function ResetPasswordForm({ token, callbackError, destination }: { token: strin
         <form onSubmit={handleSubmit(submit)} noValidate>
           <Stack>
             <PasswordInput visibilityToggleFocusable visibilityToggleButtonProps={{ "aria-label": t("publicPages.auth.togglePassword") }}
-              label={t("publicPages.auth.newPassword")} autoComplete="new-password" required description={t("publicPages.auth.passwordHint")} error={errors.password?.message}
-              {...register("password", { required: t("publicPages.auth.required"), minLength: { value: 8, message: t("publicPages.auth.shortPassword") } })} />
+              label={t("publicPages.auth.newPassword")} autoComplete="new-password" required description={t("publicPages.auth.passwordHint", { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH })} error={validationMessage(errors.password?.message, t)}
+              {...register("password")} />
             <PasswordInput visibilityToggleFocusable visibilityToggleButtonProps={{ "aria-label": t("publicPages.auth.togglePassword") }}
-              label={t("publicPages.auth.confirmPassword")} autoComplete="new-password" required error={errors.confirmPassword?.message}
-              {...register("confirmPassword", { required: t("publicPages.auth.required"), validate: (value) => value === getValues("password") || t("publicPages.auth.passwordMismatch") })} />
+              label={t("publicPages.auth.confirmPassword")} autoComplete="new-password" required error={validationMessage(errors.confirmPassword?.message, t)}
+              {...register("confirmPassword")} />
             <Button type="submit" loading={isSubmitting} disabled={!authClient.configured}>{t("publicPages.auth.reset")}</Button>
           </Stack>
         </form>

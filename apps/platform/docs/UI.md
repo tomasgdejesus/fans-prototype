@@ -85,41 +85,15 @@ a navigation link is selected.
 
 ## Forms
 
-Keep React Hook Form. For standard inputs, register them directly:
+Use React Hook Form with `zodResolver` from `@hookform/resolvers/zod`.
 
-```tsx
-import { Button, Stack, TextInput } from "@mantine/core";
-import { useForm } from "react-hook-form";
+- `src/shared/contracts/auth.ts`: auth input schemas and inferred types.
+- `src/shared/constants/auth.ts`: password limits, also used by Better Auth.
+- `src/react-app/features/auth/form-schemas.ts`: password confirmation checks.
+- `src/react-app/lib/validation.ts`: translate validation errors at render time.
 
-type Values = { email: string };
-
-export function EmailForm({ onSubmit }: { onSubmit: (values: Values) => Promise<void> }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({
-    defaultValues: { email: "" },
-  });
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Stack>
-        <TextInput
-          label="Email"
-          type="email"
-          autoComplete="email"
-          required
-          error={errors.email?.message}
-          {...register("email", { required: "Enter an email address" })}
-        />
-        <Button type="submit" loading={isSubmitting}>Continue</Button>
-      </Stack>
-    </form>
-  );
-}
-```
-
-Use `Controller` for controls with non-native value APIs, such as Select and
-MultiSelect. If adopting `zodResolver`, first add `@hookform/resolvers` to this
-app with `pnpm --filter @fans/platform add @hookform/resolvers`. Validate input
-again in the backend using the shared request contracts.
+Register standard inputs directly; use `Controller` for Select and MultiSelect.
+Keep labels, `required`, autocomplete, and error display on inputs.
 
 ## Testing + Verification
 

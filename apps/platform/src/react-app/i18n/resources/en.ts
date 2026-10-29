@@ -2,6 +2,14 @@ import { publicPages } from "./public-en";
 
 export const en = {
   publicPages,
+  validation: {
+    required: "This field is required.",
+    invalid: "Enter a valid value.",
+    invalidEmail: "Enter a valid email address.",
+    passwordTooShort: "Use at least {{min}} characters.",
+    passwordTooLong: "Use no more than {{max}} characters.",
+    passwordMismatch: "Passwords must match.",
+  },
   common: {
     brand: "FANS",
     language: {

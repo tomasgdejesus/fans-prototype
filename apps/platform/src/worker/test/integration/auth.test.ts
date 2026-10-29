@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Client } from "pg";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
 import { createApp } from "../../app";
 import { withTestDatabase } from "../helpers/database";
 
@@ -59,6 +60,16 @@ async function getSession(cookie = "") {
 }
 
 describe("Better Auth PostgreSQL integration", () => {
+  // Better Auth enters a database transaction before signup password validation.
+  it.each([PASSWORD_MIN_LENGTH - 1, PASSWORD_MAX_LENGTH + 1])("rejects a %i-character signup password without creating a user", async (length) => {
+    const response = await post("/sign-up/email", { name: "FANS user", email, password: "x".repeat(length) });
+    expect(response.status).toBe(400);
+    const body = await response.json<{ code: string }>();
+    expect(body.code).toBe(length < PASSWORD_MIN_LENGTH ? "PASSWORD_TOO_SHORT" : "PASSWORD_TOO_LONG");
+    const { rows } = await client.query('SELECT id FROM "user" WHERE email = $1', [email]);
+    expect(rows).toEqual([]);
+  });
+
   it("registers, persists credentials and UUIDv7 IDs, logs in, validates cookies, and logs out", async () => {
     const signup = await post("/sign-up/email", {
       name: "FANS user", email, password,

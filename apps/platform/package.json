@@ -2,6 +2,7 @@
   "name": "@fans/platform",
   "description": "FANS platform React+Vite frontend and Hono API",
   "dependencies": {
+    "@hookform/resolvers": "^5.7.1",
     "@mantine/core": "9.7.3",
     "@mantine/hooks": "9.7.3",
     "@tanstack/react-query": "^5.104.1",

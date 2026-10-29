@@ -1,7 +1,9 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
+import { i18n } from "../../i18n";
 import { authClient, type AuthResult } from "../../lib/auth-client";
 import ForgotPasswordPage from "../../routes/forgot-password/page";
 import LoginPage from "../../routes/login/page";
@@ -25,6 +27,93 @@ afterEach(() => {
 });
 
 describe("public account flows", () => {
+  it("requires login fields before calling the service", async () => {
+    const signIn = vi.spyOn(authClient, "signIn");
+    renderApp(<MemoryRouter><LoginPage /></MemoryRouter>);
+    const button = screen.getByRole("button", { name: "Log in" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.setup().click(button);
+    expect(await screen.findAllByText("This field is required.")).toHaveLength(2);
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it("passes short existing passwords through unchanged", async () => {
+    const signIn = vi.spyOn(authClient, "signIn").mockResolvedValue({ ok: false, reason: "credentials" });
+    renderApp(<MemoryRouter><LoginPage /></MemoryRouter>);
+    const user = userEvent.setup();
+    const button = screen.getByRole("button", { name: "Log in" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
+    await user.type(screen.getByLabelText(/^Password/), " x ");
+    await user.click(button);
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: " x " }));
+  });
+
+  it.each([
+    { Page: ForgotPasswordPage, action: "Send reset link", method: "requestPasswordReset" as const },
+    { Page: VerifyEmailPage, action: "Resend verification email", method: "resendVerification" as const },
+  ])("validates email before $method", async ({ Page, action, method }) => {
+    const request = vi.spyOn(authClient, method);
+    renderApp(<MemoryRouter><Page /></MemoryRouter>);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/Email address/), "invalid-email");
+    await user.click(screen.getByRole("button", { name: action }));
+    expect(await screen.findByText("Enter a valid email address.")).toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { length: PASSWORD_MIN_LENGTH - 1, message: `Use at least ${PASSWORD_MIN_LENGTH} characters.` },
+    { length: PASSWORD_MAX_LENGTH + 1, message: `Use no more than ${PASSWORD_MAX_LENGTH} characters.` },
+  ])("blocks registration with a $length-character password", async ({ length, message }) => {
+    const register = vi.spyOn(authClient, "register");
+    renderApp(<MemoryRouter><RegisterPage /></MemoryRouter>);
+    const user = userEvent.setup();
+    const button = screen.getByRole("button", { name: "Create account" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
+    await user.type(screen.getByLabelText(/^Password/), "x".repeat(length));
+    await user.type(screen.getByLabelText(/Confirm password/), "x".repeat(length));
+    await user.click(button);
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it("translates a visible confirmation error when the language changes", async () => {
+    const register = vi.spyOn(authClient, "register");
+    renderApp(<MemoryRouter><RegisterPage /></MemoryRouter>);
+    const user = userEvent.setup();
+    const button = screen.getByRole("button", { name: "Create account" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
+    await user.type(screen.getByLabelText(/^Password/), "example-password");
+    await user.type(screen.getByLabelText(/Confirm password/), "different-password");
+    await user.click(button);
+    expect(await screen.findByText("Passwords must match.")).toBeInTheDocument();
+    expect(register).not.toHaveBeenCalled();
+    await act(async () => { await i18n.changeLanguage("es"); });
+    expect(screen.getByText("Las contraseñas deben coincidir.")).toBeInTheDocument();
+    expect(screen.queryByText("Passwords must match.")).not.toBeInTheDocument();
+  });
+
+  it("requires matching reset passwords and sends only the token and exact password", async () => {
+    const reset = vi.spyOn(authClient, "resetPassword").mockResolvedValue({ ok: true });
+    renderApp(<MemoryRouter initialEntries={["/reset-password?token=opaque-token"]}><ResetPasswordPage /></MemoryRouter>);
+    const user = userEvent.setup();
+    const password = " example-password ";
+    await user.type(screen.getByLabelText(/New password/), password);
+    const confirmation = screen.getByLabelText(/Confirm password/);
+    await user.type(confirmation, password.trim());
+    await user.click(screen.getByRole("button", { name: "Reset password" }));
+    expect(await screen.findByText("Passwords must match.")).toBeInTheDocument();
+    expect(reset).not.toHaveBeenCalled();
+    await user.clear(confirmation);
+    await user.type(confirmation, password);
+    await user.click(screen.getByRole("button", { name: "Reset password" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Your password has been reset.");
+    expect(reset).toHaveBeenCalledExactlyOnceWith({ token: "opaque-token", password });
+  });
+
   it("does not offer submission or pretend success without an auth service", () => {
     authClient.configured = false;
     renderApp(<MemoryRouter><LoginPage /></MemoryRouter>);

@@ -34,6 +34,7 @@ beforeEach(() => {
   // Any unexpected SQL fails immediately instead of opening a connection.
   pool = new Pool();
   vi.spyOn(pool, "query").mockImplementation(() => { throw new Error("Unexpected SQL in the primary auth suite."); });
+  vi.spyOn(pool, "connect").mockImplementation(() => { throw new Error("Unexpected connection in the primary auth suite."); });
   db = drizzle({ client: pool, schema });
   events = [];
   vi.mocked(withDatabase).mockImplementation(useTestDatabase);

@@ -15,7 +15,7 @@ export const publicPages = {
     recoveryUnavailable: "Password recovery is not available yet. Contact FANS if you need help accessing your account.",
     email: "Email address", password: "Password", newPassword: "New password", confirmPassword: "Confirm password",
     togglePassword: "Show or hide password",
-    required: "This field is required.", invalidEmail: "Enter a valid email address.", passwordHint: "Use at least 8 characters.", shortPassword: "Use at least 8 characters.", passwordMismatch: "Passwords must match.",
+    passwordHint: "Use {{min}}–{{max}} characters.",
     signIn: "Log in", register: "Create account", sendReset: "Send reset link", reset: "Reset password", resend: "Resend verification email", verify: "Verify email",
     recoverySent: "If an account can receive password recovery emails, instructions will be sent to that address.",
     registered: "Check your email for any required verification, then log in to continue.",
