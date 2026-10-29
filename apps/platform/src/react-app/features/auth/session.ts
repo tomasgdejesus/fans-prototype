@@ -2,6 +2,8 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { authClient, type PublicSession } from "../../lib/auth-client";
 
 export const publicSessionKey = ["auth", "session"] as const;
+// Identifies the sending tab; this is not a session token or authorization input.
+const sessionBroadcastSource = crypto.randomUUID();
 const accountQueries = { predicate: (query: { queryKey: readonly unknown[] }) =>
   !(query.queryKey.length === 2 && query.queryKey[0] === "auth" && query.queryKey[1] === "session") };
 
@@ -55,10 +57,17 @@ export function openSessionChannel(): BroadcastChannel | null {
   }
 }
 
+export function isExternalSessionChange(data: unknown): boolean {
+  return typeof data === "object" && data !== null
+    && "type" in data && data.type === "session-changed"
+    && "source" in data && typeof data.source === "string"
+    && data.source !== sessionBroadcastSource;
+}
+
 export function broadcastSessionChange() {
   const channel = openSessionChannel();
   if (!channel) return;
-  try { channel.postMessage("session-changed"); }
+  try { channel.postMessage({ type: "session-changed", source: sessionBroadcastSource }); }
   catch { /* Cross-tab notifications are best effort. */ }
   finally { channel.close(); }
 }

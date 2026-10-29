@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { openSessionChannel, refreshPublicSession } from "./session";
+import { isExternalSessionChange, openSessionChannel, refreshPublicSession } from "./session";
 
 export function SessionSync() {
   const queryClient = useQueryClient();
@@ -8,7 +8,9 @@ export function SessionSync() {
     const channel = openSessionChannel();
     if (!channel) return;
     channel.onmessage = (event: MessageEvent<unknown>) => {
-      if (event.data === "session-changed") {
+      // A different BroadcastChannel object in this tab also receives our
+      // broadcasts. Only other tabs should start a second session refresh.
+      if (isExternalSessionChange(event.data)) {
         // Query state retains the error so route guards can show recovery UI.
         void refreshPublicSession(queryClient).catch(() => undefined);
       }

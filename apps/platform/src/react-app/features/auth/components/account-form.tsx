@@ -1,5 +1,5 @@
 import { Alert, Anchor, Button, PasswordInput, Stack, Text, TextInput } from "@mantine/core";
-import { useQueryClient } from "@tanstack/react-query";
+import { CancelledError, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -40,7 +40,11 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
       if (current) void navigate(destination, { replace: true });
       else if (isRegister) setRegistered(true);
       else setError("failed");
-    } catch { setError("failed"); }
+    } catch (cause) {
+      // Another authoritative refresh may supersede this one. Cancellation is
+      // not a rejected sign-in; the shared session query owns the next result.
+      if (!(cause instanceof CancelledError)) setError("failed");
+    }
   }
 
   if (session.data) return <Navigate to={destination} replace />;

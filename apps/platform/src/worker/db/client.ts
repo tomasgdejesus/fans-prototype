@@ -27,7 +27,13 @@ export async function withDatabase<T>(
   });
   // Idle connection failures are emitted separately from query rejections.
   // Never log connection strings or raw database errors to public responses.
-  pool.on("error", () => console.error("PostgreSQL idle connection failed."));
+  pool.on("error", (error: Error & { code?: string }) => {
+    console.error("PostgreSQL idle connection failed.", {
+      name: error.name,
+      code: error.code,
+      message: error.message,
+    });
+  });
 
   try {
     return await run(createDatabase(pool));
