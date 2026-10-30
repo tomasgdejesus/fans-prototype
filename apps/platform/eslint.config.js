@@ -31,7 +31,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/worker/**/*.ts"],
+    files: ["src/worker/**/*.{ts,tsx}"],
     languageOptions: { globals: globals.worker },
     rules: {
       "no-restricted-imports": ["error", {

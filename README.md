@@ -24,6 +24,7 @@ pnpm install --frozen-lockfile
 cp apps/platform/.dev.vars.example apps/platform/.dev.vars
 pnpm db:up
 pnpm db:migrate
+pnpm mail:up
 pnpm dev
 ```
 
@@ -50,6 +51,12 @@ Run all commands from the repository root.
 
 The app uses PostgreSQL and Drizzle. `pnpm db:up` starts local PostgreSQL and its transaction pooler (PgBouncer) in Docker; `pnpm db:down` stops it while retaining its data.
 `docker compose down --volumes` deletes volume. Use `pnpm db:generate` after schema changes, review the SQL, then run `pnpm db:migrate`. See [platform setup](apps/platform/README.md) for connection settings, integration tests, and hosted database preparation.
+
+## Local Dev Email
+
+MailDev captures local email in Docker. `pnpm mail:up` starts it; `pnpm mail:down` stops it. Open the inbox at `http://localhost:1080`.
+
+Configure `EMAIL_PROVIDER=maildev`, `EMAIL_FROM`, `SMTP_HOST`, and `SMTP_PORT` in `apps/platform/.dev.vars` using `.dev.vars.example`. Run `pnpm test:email` with MailDev running. Set `EMAIL_PROVIDER=disabled` to turn email off.
 
 ## Dependencies
 

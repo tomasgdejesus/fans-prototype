@@ -40,7 +40,7 @@ export function AccountForm({ mode }: { mode: "login" | "register" }) {
     setError(null);
     try {
       const result = isRegister
-        ? await authClient.register({ email: values.email, password: values.password })
+        ? await authClient.register({ email: values.email, password: values.password }, accountPath("/verify-email", destination))
         : await authClient.signIn({ email: values.email, password: values.password });
       if (!result.ok) { setError(result.reason); return; }
       broadcastSessionChange();

@@ -5,3 +5,9 @@ DATABASE_MIGRATION_URL=postgresql://fans:fans_local@127.0.0.1:5432/fans?sslmode=
 BETTER_AUTH_URL=http://localhost:5173
 # Generate a secret with: openssl rand -base64 32
 BETTER_AUTH_SECRET=
+
+# Local email; start the container with pnpm mail:up. Use disabled to turn mail off.
+EMAIL_PROVIDER=maildev
+EMAIL_FROM="FANS <noreply@fans.test>"
+SMTP_HOST=127.0.0.1
+SMTP_PORT=1025

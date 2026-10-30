@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import type { Database } from "../db/client";
 import * as authSchema from "../db/schema/auth";
 import { authOptions } from "./options";
+import { sendAuthEmail, verificationPageURL, type AuthEmailDelivery } from "../email/auth";
 
 export interface AuthConfig {
   baseURL: string;
@@ -23,7 +24,7 @@ export function readAuthConfig(values: Partial<AuthConfig>): AuthConfig | null {
   }
 }
 
-export function createAuth(db: Database, config: AuthConfig) {
+export function createAuth(db: Database, config: AuthConfig, email?: AuthEmailDelivery) {
   const validated = readAuthConfig(config);
   if (!validated) throw new Error("Invalid authentication configuration.");
 
@@ -32,6 +33,20 @@ export function createAuth(db: Database, config: AuthConfig) {
     baseURL: validated.baseURL,
     secret: validated.secret,
     trustedOrigins: [validated.baseURL],
+    emailVerification: email ? {
+      sendOnSignUp: true,
+      sendOnSignIn: false,
+      sendVerificationEmail: async ({ user, url, token }) => {
+        await sendAuthEmail(email, "verification", user.email, verificationPageURL(validated.baseURL, token, url));
+      },
+    } : undefined,
+    emailAndPassword: {
+      ...authOptions.emailAndPassword,
+      requireEmailVerification: false,
+      sendResetPassword: email ? async ({ user, url }) => {
+        await sendAuthEmail(email, "passwordReset", user.email, url);
+      } : undefined,
+    },
     database: drizzleAdapter(db, {
       provider: "pg",
       schema: authSchema,

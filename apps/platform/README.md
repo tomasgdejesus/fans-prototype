@@ -90,3 +90,26 @@ Local `.dev.vars` values are not uploaded as production secrets.
 Before enabling authentication in production, set `BETTER_AUTH_URL` to the HTTPS
 application origin and configure `BETTER_AUTH_SECRET` in the production Worker.
 Configure shared rate-limit storage; the default in-memory limiter is per isolate.
+
+### Local email
+
+Email configuration and senders: `src/worker/email/`. React Email templates:
+`src/worker/email/templates/`. Configure `EMAIL_PROVIDER`, `EMAIL_FROM`,
+`SMTP_HOST`, and `SMTP_PORT` in `.dev.vars` using `.dev.vars.example`.
+`EMAIL_PROVIDER=disabled` (also the default) turns email off. From the repository root:
+
+```bash
+pnpm mail:up
+pnpm dev
+# Inbox: http://localhost:1080
+pnpm test:email
+pnpm mail:down
+```
+
+`test:email` requires MailDev; `test:db` uses a recording sender for auth emails.
+`pnpm check` requires neither service. For a Workers runtime smoke test, register
+in the running app, open its verification email, then complete forgot/reset password.
+
+Email availability comes from `/api/auth-capabilities`; verification is sent at
+signup but is not required for sign-in. Future REST providers implement the same
+`SendEmail` type and are selected in `src/worker/email/index.ts`.

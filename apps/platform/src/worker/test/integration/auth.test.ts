@@ -4,8 +4,10 @@ import { Client } from "pg";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
 import { createApp } from "../../app";
 import { withTestDatabase } from "../helpers/database";
+import type { EmailMessage } from "../../email/types";
 
-const app = createApp(withTestDatabase);
+const messages: EmailMessage[] = [];
+const app = createApp(withTestDatabase, (config) => config.provider === "disabled" ? null : async (message) => { messages.push(message); });
 
 // Exercise the production route and request-owned connections against an explicitly
 // selected, migrated test database. Never fall back to DATABASE_URL.
@@ -16,6 +18,7 @@ if (!url || !directUrl) throw new Error("Set TEST_DATABASE_URL (pooled) and TEST
 const origin = "http://localhost:5173";
 const password = "test-only-long-password-123!";
 const bindings = {
+  EMAIL_PROVIDER: "maildev", EMAIL_FROM: "FANS <noreply@fans.test>", SMTP_HOST: "127.0.0.1", SMTP_PORT: "1025",
   DATABASE_URL: url,
   BETTER_AUTH_URL: origin,
   BETTER_AUTH_SECRET: "integration-test-only-secret-at-least-32-characters",
@@ -33,7 +36,7 @@ type AuthUser = {
 };
 
 beforeAll(async () => { await client.connect(); });
-beforeEach(() => { email = `auth-${randomUUID()}@example.invalid`; });
+beforeEach(() => { email = `auth-${randomUUID()}@example.invalid`; messages.length = 0; });
 afterEach(async () => {
   // Auth requests commit through separate connections; delete only this test's
   // unique user. Foreign keys cascade to its accounts and sessions.
@@ -131,6 +134,45 @@ describe("Better Auth PostgreSQL integration", () => {
       'SELECT count(*)::int AS count FROM session WHERE user_id = $1', [stored.id],
     );
     expect(sessions.count).toBe(0);
+  });
+
+  it("verifies email, resends verification, and resets a password using captured messages", async () => {
+    const destination = `${origin}/verify-email?returnTo=%2Fcheckout`;
+    const signup = await post("/sign-up/email", { name: "FANS user", email, password, callbackURL: destination });
+    expect(signup.status).toBe(200);
+    const cookie = cookieHeader(signup);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].to).toBe(email);
+    const link = new URL(messages[0].html.match(/href="([^"]+)"/)![1].replaceAll("&amp;", "&"));
+    expect(link.pathname).toBe("/verify-email");
+    expect(link.searchParams.get("returnTo")).toBe("/checkout");
+    expect(link.searchParams.get("token")).toBeTruthy();
+
+    expect((await post("/send-verification-email", { email, callbackURL: destination })).status).toBe(200);
+    expect(messages).toHaveLength(2);
+    const verify = await app.request(`${origin}/api/auth/verify-email?token=${encodeURIComponent(link.searchParams.get("token")!)}`, {}, bindings);
+    expect(verify.status).toBe(200);
+    expect((await getSession(cookie))?.user.emailVerified).toBe(true);
+
+    const before = messages.length;
+    expect((await post("/request-password-reset", { email: `missing-${randomUUID()}@example.invalid`, redirectTo: `${origin}/reset-password` })).status).toBe(200);
+    expect(messages).toHaveLength(before);
+    expect((await post("/request-password-reset", { email, redirectTo: `${origin}/reset-password?returnTo=%2Fcheckout` })).status).toBe(200);
+    expect(messages).toHaveLength(before + 1);
+    const resetLink = messages.at(-1)!.html.match(/href="([^"]+)"/)![1].replaceAll("&amp;", "&");
+    const redirect = await app.request(resetLink, {}, bindings);
+    expect(redirect.status).toBe(302);
+    const resetPage = new URL(redirect.headers.get("location")!, origin);
+    expect(resetPage.pathname).toBe("/reset-password");
+    expect(resetPage.searchParams.get("returnTo")).toBe("/checkout");
+    const token = resetPage.searchParams.get("token");
+    expect(token).toBeTruthy();
+    const newPassword = "new-test-password-123!";
+    expect((await post("/reset-password", { token, newPassword })).status).toBe(200);
+    expect(await getSession(cookie)).toBeNull();
+    expect((await post("/sign-in/email", { email, password })).status).toBe(401);
+    expect((await post("/sign-in/email", { email, password: newPassword })).status).toBe(200);
+    expect((await post("/reset-password", { token, newPassword })).status).toBe(400);
   });
 
   it("rejects an external signup callback before creating a user", async () => {

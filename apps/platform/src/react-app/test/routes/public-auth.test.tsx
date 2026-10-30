@@ -14,15 +14,12 @@ import { renderApp } from "../helpers/render-app";
 
 beforeEach(() => {
   authClient.configured = true;
-  authClient.canResendVerification = true;
-  authClient.canRequestPasswordReset = true;
+  vi.spyOn(authClient, "getEmailCapabilities").mockResolvedValue({ emailVerification: true, passwordReset: true });
   vi.spyOn(authClient, "getSession").mockResolvedValue(null);
 });
 
 afterEach(() => {
   authClient.configured = true;
-  authClient.canResendVerification = false;
-  authClient.canRequestPasswordReset = false;
   vi.restoreAllMocks();
 });
 
@@ -191,14 +188,24 @@ describe("public account flows", () => {
     await user.type(screen.getByLabelText(/Confirm password/), "example-password");
     await user.click(screen.getByRole("button", { name: "Create account" }));
     expect(await screen.findByText("Registered checkout")).toBeInTheDocument();
-    expect(register).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" });
+    expect(register).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" }, expect.stringContaining("/verify-email?returnTo="));
   });
 
-  it("disables recovery requests while email delivery is unavailable", () => {
-    authClient.canRequestPasswordReset = false;
+  it("disables recovery requests while email delivery is unavailable", async () => {
+    vi.mocked(authClient.getEmailCapabilities).mockResolvedValue({ emailVerification: false, passwordReset: false });
     renderApp(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>);
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
-    expect(screen.getByText(/Password recovery is not available yet/)).toBeInTheDocument();
+    expect(await screen.findByText(/Password recovery is not available yet/)).toBeInTheDocument();
+  });
+
+  it("can retry a failed email capability check", async () => {
+    vi.mocked(authClient.getEmailCapabilities).mockRejectedValueOnce(new Error("Unavailable"))
+      .mockResolvedValue({ emailVerification: true, passwordReset: true });
+    renderApp(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>);
+    expect(await screen.findByText("We could not check email services. Please try again.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled());
   });
 
   it("does not claim an email was sent when the request fails", async () => {
@@ -233,10 +240,10 @@ describe("public account flows", () => {
     expect(screen.queryByRole("button", { name: "Reset password" })).not.toBeInTheDocument();
   });
 
-  it("does not trust a verification success query parameter", () => {
+  it("does not trust a verification success query parameter", async () => {
     renderApp(<MemoryRouter initialEntries={["/verify-email?success=true"]}><VerifyEmailPage /></MemoryRouter>);
     expect(screen.queryByText("Your email has been verified. Log in to continue.")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Resend verification email" })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Resend verification email" })).toBeEnabled());
   });
 
   it("only reports verification success after checking with the service", async () => {

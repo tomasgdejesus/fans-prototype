@@ -140,6 +140,7 @@ Hono serves the API under `/api`. The backend owns authentication checks, author
 - Feature services and queries: business logic and database operations, separated as complexity grows.
 - `middleware/`: session handling and shared request checks.
 - `auth/`: Better Auth server configuration.
+- `email/`: environment-selected senders and React Email templates.
 - `db/schema/`: Drizzle table definitions.
 - Database adapters: provider-specific connection setup.
 

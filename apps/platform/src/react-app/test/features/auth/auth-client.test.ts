@@ -15,8 +15,7 @@ beforeEach(() => {
     sdk.requestPasswordReset, sdk.resetPassword, sdk.verifyEmail, sdk.sendVerificationEmail]) method.mockReset();
 });
 afterEach(() => {
-  authClient.canRequestPasswordReset = false;
-  authClient.canResendVerification = false;
+  vi.unstubAllGlobals();
 });
 
 describe("Better Auth frontend adapter", () => {
@@ -31,7 +30,7 @@ describe("Better Auth frontend adapter", () => {
     sdk.signUp.email.mockResolvedValue({ error: null });
     const input = { email: "learner@example.com", password: "example-password" };
     expect(await authClient.register(input)).toEqual({ ok: true });
-    expect(sdk.signUp.email).toHaveBeenCalledWith({ ...input, name: "FANS user" });
+    expect(sdk.signUp.email).toHaveBeenCalledWith({ ...input, name: "FANS user", callbackURL: new URL("/verify-email", window.location.origin).href });
   });
 
   it("uses server-owned role and account status in session results", async () => {
@@ -63,16 +62,16 @@ describe("Better Auth frontend adapter", () => {
     expect(await authClient.signIn({ email: "learner@example.com", password: "wrong" })).toEqual({ ok: false, reason });
   });
 
-  it("does not send mail requests before server email delivery is configured", async () => {
-    const input = { email: "learner@example.com", redirectTo: "https://fans.invalid/reset-password" };
-    expect(await authClient.requestPasswordReset(input)).toEqual({ ok: false, reason: "unavailable" });
-    expect(await authClient.resendVerification(input)).toEqual({ ok: false, reason: "unavailable" });
-    expect(sdk.requestPasswordReset).not.toHaveBeenCalled();
-    expect(sdk.sendVerificationEmail).not.toHaveBeenCalled();
+  it("loads email availability from the backend", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ emailVerification: false, passwordReset: false }), {
+      headers: { "content-type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    expect(await authClient.getEmailCapabilities()).toEqual({ emailVerification: false, passwordReset: false });
+    expect(fetch).toHaveBeenCalledOnce();
   });
 
   it("keeps unknown-account recovery neutral and uses the SDK's redirect field", async () => {
-    authClient.canRequestPasswordReset = true;
     sdk.requestPasswordReset.mockResolvedValue({ error: { code: "USER_NOT_FOUND", status: 400 } });
     const input = { email: "unknown@example.com", redirectTo: "https://fans.invalid/reset-password" };
     expect(await authClient.requestPasswordReset(input)).toEqual({ ok: true });

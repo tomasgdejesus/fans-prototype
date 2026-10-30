@@ -17,7 +17,9 @@
     "react-router": "^8.4.0",
     "uuid": "^14.0.3",
     "zod": "^4.6.5",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "nodemailer": "^10.2.1",
+    "react-email": "^6.11.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.52.1",
@@ -65,7 +67,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate --config=drizzle.runtime.config.ts",
     "db:studio": "drizzle-kit studio --config=drizzle.runtime.config.ts",
-    "test:db": "vitest run --config vitest.db.config.ts"
+    "test:db": "vitest run --config vitest.db.config.ts",
+    "test:email": "vitest run --config vitest.email.config.ts"
   },
   "type": "module"
 }

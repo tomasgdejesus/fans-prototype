@@ -3,6 +3,7 @@ import { inferAdditionalFields } from "better-auth/client/plugins";
 import type { EmailInput, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
 import type { Auth } from "../../worker/auth";
 import type { AuthSession } from "../../worker/env";
+import { apiClient } from "./api-client";
 
 // The SDK handles cookies; TanStack Query owns the frontend session state.
 const betterAuthClient = createAuthClient({
@@ -44,11 +45,10 @@ function emailResult(error: ServiceError | null): EmailRequestResult {
 
 export interface PublicAuthClient {
   configured: boolean;
-  canRequestPasswordReset: boolean;
-  canResendVerification: boolean;
+  getEmailCapabilities(signal?: AbortSignal): Promise<{ emailVerification: boolean; passwordReset: boolean }>;
   getSession(signal?: AbortSignal): Promise<PublicSession | null>;
   signIn(input: LoginInput): Promise<AuthResult>;
-  register(input: RegistrationInput): Promise<AuthResult>;
+  register(input: RegistrationInput, verificationPath?: string): Promise<AuthResult>;
   signOut(): Promise<AuthResult>;
   requestPasswordReset(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
   resetPassword(input: ResetPasswordInput): Promise<AuthResult>;
@@ -58,9 +58,11 @@ export interface PublicAuthClient {
 
 export const authClient: PublicAuthClient = {
   configured: true,
-  // Enable only alongside the corresponding server email-delivery callbacks.
-  canRequestPasswordReset: false,
-  canResendVerification: false,
+  async getEmailCapabilities(signal) {
+    const response = await apiClient.api["auth-capabilities"].$get({}, { init: { signal, cache: "no-store" } });
+    if (response.status !== 200) throw new Error("Email capability check failed.");
+    return response.json();
+  },
   async getSession(signal) {
     const { data, error } = await betterAuthClient.getSession({ fetchOptions: { signal } });
     // An outage must not be treated as a signed-out session.
@@ -76,8 +78,9 @@ export const authClient: PublicAuthClient = {
     const { error } = await betterAuthClient.signIn.email(input);
     return authResult(error);
   },
-  async register(input) {
-    const { error } = await betterAuthClient.signUp.email({ ...input, name: "FANS user" });
+  async register(input, verificationPath = "/verify-email") {
+    const callbackURL = new URL(verificationPath, window.location.origin).href;
+    const { error } = await betterAuthClient.signUp.email({ ...input, name: "FANS user", callbackURL });
     return authResult(error);
   },
   async signOut() {
@@ -85,7 +88,6 @@ export const authClient: PublicAuthClient = {
     return authResult(error);
   },
   async requestPasswordReset({ email, redirectTo }) {
-    if (!authClient.canRequestPasswordReset) return { ok: false, reason: "unavailable" };
     const { error } = await betterAuthClient.requestPasswordReset({ email, redirectTo });
     return emailResult(error);
   },
@@ -99,7 +101,6 @@ export const authClient: PublicAuthClient = {
     return authResult(error);
   },
   async resendVerification({ email, redirectTo }) {
-    if (!authClient.canResendVerification) return { ok: false, reason: "unavailable" };
     const { error } = await betterAuthClient.sendVerificationEmail({ email, callbackURL: redirectTo });
     return emailResult(error);
   },

@@ -9,6 +9,8 @@ export const publicPages = {
     unavailable: "Account services are not available in this prototype. You can browse the catalog, but account forms cannot be submitted yet.",
     sessionError: "We could not check your session. Please try again.",
     checking: "Checking your session…",
+    emailChecking: "Checking email services…",
+    emailStatusError: "We could not check email services. Please try again.",
     retry: "Try again", signOut: "Sign out",
     inactiveTitle: "Account unavailable", inactiveDescription: "This account is not active. Contact FANS for assistance or sign out to use another account.",
     deniedTitle: "Access denied", deniedDescription: "Your account does not have permission to access this page.",

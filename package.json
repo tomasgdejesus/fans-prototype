@@ -15,7 +15,10 @@
     "db:generate": "pnpm --filter @fans/platform run db:generate",
     "db:migrate": "pnpm --filter @fans/platform run db:migrate",
     "db:studio": "pnpm --filter @fans/platform run db:studio",
-    "test:db": "pnpm --filter @fans/platform run test:db"
+    "test:db": "pnpm --filter @fans/platform run test:db",
+    "mail:up": "docker compose up -d --wait maildev",
+    "mail:down": "docker compose stop maildev",
+    "test:email": "pnpm --filter @fans/platform run test:email"
   },
   "engines": {
     "node": ">=22.22.0"

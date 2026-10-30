@@ -18,7 +18,7 @@ export default defineConfig({
           name: "worker",
           environment: "node",
           include: ["src/worker/test/**/*.test.ts"],
-          exclude: ["src/worker/test/integration/**"],
+          exclude: ["src/worker/test/integration/**", "src/worker/test/maildev/**"],
         },
       },
       {
@@ -32,7 +32,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["src/react-app/**/*.{ts,tsx}", "src/worker/**/*.ts", "src/shared/**/*.ts"],
+      include: ["src/react-app/**/*.{ts,tsx}", "src/worker/**/*.{ts,tsx}", "src/shared/**/*.ts"],
       exclude: [
         "src/**/*.d.ts",
         "src/**/test/**",

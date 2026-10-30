@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import app from "../app";
+import app, { createApp } from "../app";
 import * as authModule from "../auth";
 import { withDatabase, type Database } from "../db/client";
 import * as schema from "../db/schema";
@@ -130,6 +130,22 @@ describe("Better Auth HTTP integration", () => {
       "fixture-preference=remember; Path=/; HttpOnly",
     ]);
     expect(events).toEqual(["open", "handler", "finished", "close"]);
+  });
+
+  it.each([200, 500])("dispatches staged mail only after successful database work (status %i)", async (status) => {
+    const sendEmail = vi.fn(async () => { events.push("mail"); });
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET });
+    vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, delivery) => {
+      vi.spyOn(auth, "handler").mockImplementation(async () => {
+        delivery?.enqueue?.(() => sendEmail());
+        return new Response("result", { status });
+      });
+      return auth;
+    });
+    const response = await createApp(withDatabase, () => sendEmail).request(`${origin}/api/auth/test`, {}, bindings);
+    expect(response.status).toBe(status);
+    expect(events).toEqual(status === 200 ? ["open", "close", "mail"] : ["open", "close"]);
+    expect(sendEmail).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
   });
 
   it("does not expose database errors or secrets", async () => {
