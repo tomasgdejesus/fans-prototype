@@ -110,7 +110,8 @@ pnpm mail:down
 `pnpm check` requires neither service. For a Workers runtime smoke test, register
 in the running app, open its verification email, then complete forgot/reset password.
 
-Verification is sent at signup but is not required for sign-in.
+Register → verify email → log in. Correct-password sign-in attempts for unverified
+accounts send a fresh link. Verified accounts only log in again after session expiry.
 Delivery failures are logged; accepted requests do not guarantee delivery.
 Future REST providers implement the same
 `SendEmail` type and are selected in `src/worker/email/index.ts`.

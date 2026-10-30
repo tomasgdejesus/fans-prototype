@@ -16,6 +16,8 @@ export const authOptions = {
   basePath: "/api/auth",
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
+    autoSignIn: false,
     minPasswordLength: PASSWORD_MIN_LENGTH,
     maxPasswordLength: PASSWORD_MAX_LENGTH,
     revokeSessionsOnPasswordReset: true,

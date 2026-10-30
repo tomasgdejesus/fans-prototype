@@ -42,7 +42,7 @@ describe("public account flows", () => {
     await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
     await user.type(screen.getByLabelText(/^Password/), " x ");
     await user.click(button);
-    await waitFor(() => expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: " x " }));
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: " x " }, "/verify-email"));
   });
 
   it.each([
@@ -119,7 +119,7 @@ describe("public account flows", () => {
   });
 
   it("returns signed-in visitors to their intended checkout", async () => {
-    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: false });
+    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: true });
     renderApp(
       <MemoryRouter initialEntries={["/login?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class"]}>
         <Routes>
@@ -145,7 +145,7 @@ describe("public account flows", () => {
 
   it("logs in before continuing to the intended destination", async () => {
     const signIn = vi.spyOn(authClient, "signIn").mockImplementation(async () => {
-      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: false });
+      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: true });
       return { ok: true };
     });
     renderApp(
@@ -162,32 +162,39 @@ describe("public account flows", () => {
     await user.type(screen.getByLabelText(/^Password/), "example-password");
     await user.click(screen.getByRole("button", { name: "Log in" }));
     expect(await screen.findByText("Authenticated checkout")).toBeInTheDocument();
-    expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" });
+    expect(signIn).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" }, expect.stringContaining("/verify-email?returnTo="));
   });
 
-  it("registers with email and passwords before continuing checkout", async () => {
-    const register = vi.spyOn(authClient, "register").mockImplementation(async () => {
-      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "new-user", platformRole: "user", status: "active", emailVerified: false });
-      return { ok: true };
-    });
+  it.each(["register", "login"] as const)("sends %s to verification before checkout and keeps the email for resending", async (mode) => {
+    const request = mode === "register"
+      ? vi.spyOn(authClient, "register").mockResolvedValue({ ok: true })
+      : vi.spyOn(authClient, "signIn").mockResolvedValue({ ok: false, reason: "verificationRequired" });
     renderApp(
-      <MemoryRouter initialEntries={["/register?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class"]}>
+      <MemoryRouter initialEntries={[`/${mode}?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class`]}>
         <Routes>
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/checkout" element={<p>Registered checkout</p>} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/checkout" element={<p>Authenticated checkout</p>} />
         </Routes>
       </MemoryRouter>,
     );
     const user = userEvent.setup();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Create account" })).toBeEnabled());
+    const submit = screen.getByRole("button", { name: mode === "register" ? "Create account" : "Log in" });
+    await waitFor(() => expect(submit).toBeEnabled());
     expect(screen.queryByLabelText(/Full name/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeDisabled();
     await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
     await user.type(screen.getByLabelText(/^Password/), "example-password");
-    await user.type(screen.getByLabelText(/Confirm password/), "example-password");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
-    expect(await screen.findByText("Registered checkout")).toBeInTheDocument();
-    expect(register).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" }, expect.stringContaining("/verify-email?returnTo="));
+    if (mode === "register") await user.type(screen.getByLabelText(/Confirm password/), "example-password");
+    await user.click(submit);
+    expect(await screen.findByRole("button", { name: "Resend verification email" })).toBeEnabled();
+    expect(screen.getByLabelText(/Email address/)).toHaveValue("learner@example.com");
+    expect(screen.queryByLabelText(/^Password/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Authenticated checkout")).not.toBeInTheDocument();
+    const login = screen.getByRole("link", { name: "Back to log in" });
+    expect(login).toHaveAttribute("href", "/login?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class");
+    expect(request).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" }, expect.stringContaining("/verify-email?returnTo="));
   });
 
   it.each([
@@ -236,12 +243,28 @@ describe("public account flows", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Resend verification email" })).toBeEnabled());
   });
 
+  it("lets a visitor request a replacement for an expired verification link", async () => {
+    vi.spyOn(authClient, "verifyEmail").mockResolvedValue({ ok: false, reason: "expiredLink" });
+    const resend = vi.spyOn(authClient, "resendVerification").mockResolvedValue({ ok: true });
+    renderApp(<MemoryRouter initialEntries={["/verify-email?token=expired-token&returnTo=%2Fcheckout"]}><VerifyEmailPage /></MemoryRouter>);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Verify email" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("This link has expired");
+    expect(screen.queryByRole("button", { name: "Verify email" })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Email address/), "learner@example.com");
+    await user.click(screen.getByRole("button", { name: "Resend verification email" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("If verification is available for this account");
+    expect(new URL(resend.mock.calls[0][0].redirectTo).searchParams.get("returnTo")).toBe("/checkout");
+  });
+
   it("only reports verification success after checking with the service", async () => {
     const verify = vi.spyOn(authClient, "verifyEmail").mockResolvedValue({ ok: true });
-    renderApp(<MemoryRouter initialEntries={["/verify-email?token=opaque-token"]}><VerifyEmailPage /></MemoryRouter>);
+    renderApp(<MemoryRouter initialEntries={["/verify-email?token=opaque-token&returnTo=%2Fcheckout"]}><VerifyEmailPage /></MemoryRouter>);
     expect(verify).not.toHaveBeenCalled();
     await userEvent.setup().click(screen.getByRole("button", { name: "Verify email" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Your email has been verified");
     expect(verify).toHaveBeenCalledWith({ token: "opaque-token" });
+    expect(screen.getByRole("link", { name: "Back to log in" })).toHaveAttribute("href", "/login?returnTo=%2Fcheckout");
+    expect(screen.queryByRole("button", { name: "Resend verification email" })).not.toBeInTheDocument();
   });
 });

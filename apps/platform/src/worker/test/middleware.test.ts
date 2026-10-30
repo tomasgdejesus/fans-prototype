@@ -6,8 +6,8 @@ import type { AuthSession, WorkerEnv } from "../env";
 import { requireActiveAccount, requirePlatformRole } from "../middleware/authorization";
 import { createSessionMiddleware } from "../middleware/session";
 
-function createTestSession(status = "active", platformRole = "user"): AuthSession {
-  return { user: { status, platformRole } } as unknown as AuthSession;
+function createTestSession(status = "active", platformRole = "user", emailVerified = true): AuthSession {
+  return { user: { status, platformRole, emailVerified } } as unknown as AuthSession;
 }
 
 function createAuth(getSession: ReturnType<typeof vi.fn>): Auth {
@@ -60,6 +60,16 @@ describe("session middleware", () => {
 
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "Authentication is unavailable." });
+  });
+
+  it("denies protected access to an unverified session created under the old policy", async () => {
+    const getSession = vi.fn().mockResolvedValue(createTestSession("active", "admin", false));
+    const app = new Hono<WorkerEnv>()
+      .use("*", createSessionMiddleware(createAuth(getSession)))
+      .get("/", requireActiveAccount, (c) => c.json({ ok: true }));
+    const response = await app.request("/");
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Authentication required." });
   });
 
   it("does not convert downstream failures into authentication errors", async () => {

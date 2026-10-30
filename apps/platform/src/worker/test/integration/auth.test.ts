@@ -1,5 +1,6 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Client } from "pg";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
 import { createApp } from "../../app";
@@ -62,6 +63,14 @@ async function getSession(cookie = "") {
   return response.json<{ user: AuthUser } | null>();
 }
 
+function verificationLink(message = messages.at(-1)!): URL {
+  return new URL(message.html.match(/href="([^"]+)"/)![1].replaceAll("&amp;", "&"));
+}
+
+function verifyLink(link: URL) {
+  return app.request(`${origin}/api/auth/verify-email?token=${encodeURIComponent(link.searchParams.get("token")!)}`, {}, bindings);
+}
+
 describe("Better Auth PostgreSQL integration", () => {
   // Better Auth enters a database transaction before signup password validation.
   it.each([PASSWORD_MIN_LENGTH - 1, PASSWORD_MAX_LENGTH + 1])("rejects a %i-character signup password without creating a user", async (length) => {
@@ -79,40 +88,51 @@ describe("Better Auth PostgreSQL integration", () => {
       platformRole: "admin", status: "suspended", emailVerified: true,
     });
     expect(signup.status).toBe(200);
-    const registered = await signup.json<{ user: AuthUser }>();
+    const registered = await signup.json<{ token: string | null; user: AuthUser }>();
     expect(registered.user).toMatchObject({ email, platformRole: "user", status: "active", emailVerified: false });
     expect(registered.user).not.toHaveProperty("password");
     const signupCookie = cookieHeader(signup);
-    expect(signupCookie).toContain("better-auth.session_token=");
+    expect(registered.token).toBeNull();
+    expect(signupCookie).not.toContain("better-auth.session_token=");
+    expect(await getSession(signupCookie)).toBeNull();
+    expect(messages).toHaveLength(1);
 
     const { rows: [stored] } = await client.query<{
       id: string; name: string; user_version: number; account_version: number;
-      session_version: number; provider: string; password: string;
+      provider: string; password: string;
     }>(`
       SELECT u.id, u.display_name AS name, uuid_extract_version(u.id) AS user_version,
         uuid_extract_version(a.id) AS account_version,
-        uuid_extract_version(s.id) AS session_version,
         a.provider_id AS provider, a.password
       FROM "user" u
       JOIN account a ON a.user_id = u.id
-      JOIN session s ON s.user_id = u.id
       WHERE u.email = $1
     `, [email]);
     expect(stored).toMatchObject({
       id: registered.user.id, name: "FANS user", provider: "credential",
-      user_version: 7, account_version: 7, session_version: 7,
+      user_version: 7, account_version: 7,
     });
     expect(stored.password).toEqual(expect.any(String));
     expect(stored.password).not.toBe(password);
 
-    expect(await getSession(signupCookie)).toMatchObject({ user: { id: stored.id } });
+    expect((await verifyLink(verificationLink())).status).toBe(200);
+    expect(await getSession()).toBeNull();
+    const firstLogin = await post("/sign-in/email", { email, password });
+    expect(firstLogin.status).toBe(200);
+    const firstCookie = cookieHeader(firstLogin);
+    expect(firstCookie).toContain("better-auth.session_token=");
+    expect(await getSession(firstCookie)).toMatchObject({ user: { id: stored.id, emailVerified: true } });
+    const { rows: [storedSession] } = await client.query<{ version: number }>(
+      'SELECT uuid_extract_version(id) AS version FROM session WHERE user_id = $1', [stored.id],
+    );
+    expect(storedSession.version).toBe(7);
 
-    const escalation = await post("/update-user", { platformRole: "admin" }, signupCookie);
+    const escalation = await post("/update-user", { platformRole: "admin" }, firstCookie);
     expect(escalation.status).toBe(400);
-    expect((await getSession(signupCookie))?.user.platformRole).toBe("user");
+    expect((await getSession(firstCookie))?.user.platformRole).toBe("user");
 
-    expect((await post("/sign-out", {}, signupCookie)).status).toBe(200);
-    expect(await getSession(signupCookie)).toBeNull();
+    expect((await post("/sign-out", {}, firstCookie)).status).toBe(200);
+    expect(await getSession(firstCookie)).toBeNull();
     expect((await post("/sign-in/email", { email, password: "wrong-password" })).status).toBe(401);
 
     const login = await post("/sign-in/email", { email, password });
@@ -140,18 +160,23 @@ describe("Better Auth PostgreSQL integration", () => {
     const destination = `${origin}/verify-email?returnTo=%2Fcheckout`;
     const signup = await post("/sign-up/email", { name: "FANS user", email, password, callbackURL: destination });
     expect(signup.status).toBe(200);
-    const cookie = cookieHeader(signup);
+    expect(cookieHeader(signup)).not.toContain("better-auth.session_token=");
     expect(messages).toHaveLength(1);
     expect(messages[0].to).toBe(email);
-    const link = new URL(messages[0].html.match(/href="([^"]+)"/)![1].replaceAll("&amp;", "&"));
+    const link = verificationLink(messages[0]);
     expect(link.pathname).toBe("/verify-email");
     expect(link.searchParams.get("returnTo")).toBe("/checkout");
     expect(link.searchParams.get("token")).toBeTruthy();
 
     expect((await post("/send-verification-email", { email, callbackURL: destination })).status).toBe(200);
     expect(messages).toHaveLength(2);
-    const verify = await app.request(`${origin}/api/auth/verify-email?token=${encodeURIComponent(link.searchParams.get("token")!)}`, {}, bindings);
+    const verify = await verifyLink(link);
     expect(verify.status).toBe(200);
+    expect(cookieHeader(verify)).not.toContain("better-auth.session_token=");
+    expect(await getSession()).toBeNull();
+    const login = await post("/sign-in/email", { email, password });
+    expect(login.status).toBe(200);
+    const cookie = cookieHeader(login);
     expect((await getSession(cookie))?.user.emailVerified).toBe(true);
 
     const before = messages.length;
@@ -173,6 +198,60 @@ describe("Better Auth PostgreSQL integration", () => {
     expect((await post("/sign-in/email", { email, password })).status).toBe(401);
     expect((await post("/sign-in/email", { email, password: newPassword })).status).toBe(200);
     expect((await post("/reset-password", { token, newPassword })).status).toBe(400);
+  });
+
+  it("sends a fresh link on a later unverified login after the original link has expired", async () => {
+    const callbackURL = `${origin}/verify-email?returnTo=%2Fcheckout`;
+    const signup = await post("/sign-up/email", { name: "FANS user", email, password, callbackURL });
+    expect(signup.status).toBe(200);
+    expect(messages).toHaveLength(1);
+    const original = verificationLink();
+    const payload = JSON.parse(Buffer.from(original.searchParams.get("token")!.split(".")[1], "base64url").toString()) as { exp: number };
+    // Advance only Date so PostgreSQL sockets and deadlines keep using real timers.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime((payload.exp + 1) * 1000);
+    try {
+      const expired = await verifyLink(original);
+      expect(expired.status).toBe(401);
+      expect(await expired.json<{ code: string }>()).toMatchObject({ code: "TOKEN_EXPIRED" });
+      expect((await post("/sign-in/email", { email, password: "wrong-password", callbackURL })).status).toBe(401);
+      expect(messages).toHaveLength(1);
+
+      const denied = await post("/sign-in/email", { email, password, callbackURL });
+      expect(denied.status).toBe(403);
+      expect(await denied.json<{ code: string }>()).toMatchObject({ code: "EMAIL_NOT_VERIFIED" });
+      expect(cookieHeader(denied)).not.toContain("better-auth.session_token=");
+      expect(await getSession()).toBeNull();
+      expect(messages).toHaveLength(2);
+      const fresh = verificationLink();
+      expect(fresh.searchParams.get("token")).not.toBe(original.searchParams.get("token"));
+      expect(fresh.searchParams.get("returnTo")).toBe("/checkout");
+      const { rows: [sessions] } = await client.query<{ count: number }>(
+        'SELECT count(*)::int AS count FROM session s JOIN "user" u ON u.id = s.user_id WHERE u.email = $1', [email],
+      );
+      expect(sessions.count).toBe(0);
+
+      const verified = await verifyLink(fresh);
+      expect(verified.status).toBe(200);
+      expect(cookieHeader(verified)).not.toContain("better-auth.session_token=");
+      expect(await getSession()).toBeNull();
+      expect((await post("/sign-in/email", { email, password })).status).toBe(200);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("does not require verification again when a verified user's session expires", async () => {
+    expect((await post("/sign-up/email", { name: "FANS user", email, password })).status).toBe(200);
+    expect((await verifyLink(verificationLink())).status).toBe(200);
+    const first = await post("/sign-in/email", { email, password });
+    expect(first.status).toBe(200);
+    await client.query(`UPDATE session SET expires_at = now() - interval '1 second'
+      WHERE user_id = (SELECT id FROM "user" WHERE email = $1)`, [email]);
+    expect(await getSession(cookieHeader(first))).toBeNull();
+    const before = messages.length;
+    const next = await post("/sign-in/email", { email, password });
+    expect(next.status).toBe(200);
+    expect((await getSession(cookieHeader(next)))?.user.emailVerified).toBe(true);
+    expect(messages).toHaveLength(before);
   });
 
   it("rejects an external signup callback before creating a user", async () => {

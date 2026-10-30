@@ -17,7 +17,6 @@ export const publicPages = {
     passwordHint: "Use {{min}}–{{max}} characters.",
     signIn: "Log in", register: "Create account", sendReset: "Send reset link", reset: "Reset password", resend: "Resend verification email", verify: "Verify email",
     recoverySent: "If an account can receive password recovery emails, instructions will be sent to that address.",
-    registered: "Check your email for any required verification, then log in to continue.",
     resetDone: "Your password has been reset. You can now log in.",
     verifyInstructions: "Open the verification link in your email. If it is missing or no longer works, request another email below.",
     verifyReady: "Continue to check this email verification link.",

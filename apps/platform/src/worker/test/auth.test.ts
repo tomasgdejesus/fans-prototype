@@ -151,20 +151,27 @@ describe("Better Auth HTTP integration", () => {
     expect(events).toEqual(["open", "handler", "finished", "close"]);
   });
 
-  it.each([200, 500])("dispatches staged mail only after successful database work (status %i)", async (status) => {
+  it.each([
+    { status: 200, body: "result", sends: true },
+    { status: 403, body: JSON.stringify({ code: "EMAIL_NOT_VERIFIED" }), sends: true },
+    { status: 403, body: JSON.stringify({ code: "INVALID_ORIGIN" }), sends: false },
+    { status: 403, body: "not JSON", sends: false },
+    { status: 500, body: JSON.stringify({ code: "EMAIL_NOT_VERIFIED" }), sends: false },
+  ])("dispatches staged mail after the database scope closes: $status $body", async ({ status, body, sends }) => {
     const sendEmail = vi.fn(async () => { events.push("mail"); });
     const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
     vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, delivery) => {
       vi.spyOn(auth, "handler").mockImplementation(async () => {
         delivery.enqueue?.(() => sendEmail());
-        return new Response("result", { status });
+        return new Response(body, { status });
       });
       return auth;
     });
     const response = await createApp(withDatabase, () => sendEmail).request(`${origin}/api/auth/test`, {}, bindings);
     expect(response.status).toBe(status);
-    expect(events).toEqual(status === 200 ? ["open", "close", "mail"] : ["open", "close"]);
-    expect(sendEmail).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+    expect(await response.text()).toBe(body);
+    expect(events).toEqual(sends ? ["open", "close", "mail"] : ["open", "close"]);
+    expect(sendEmail).toHaveBeenCalledTimes(sends ? 1 : 0);
   });
 
   it("reports delivery failure on an awaiting host after closing the database scope", async () => {

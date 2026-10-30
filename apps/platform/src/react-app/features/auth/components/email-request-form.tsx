@@ -9,13 +9,13 @@ import { validationMessage } from "../../../lib/validation";
 import { accountPath } from "../navigation";
 import { AuthError } from "./auth-card";
 
-export function EmailRequestForm({ kind, destination }: { kind: "recovery" | "verification"; destination: string }) {
+export function EmailRequestForm({ kind, destination, initialEmail = "" }: { kind: "recovery" | "verification"; destination: string; initialEmail?: string }) {
   const { t } = useTranslation();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<AuthFailure | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EmailInput>({
     resolver: zodResolver(emailInputSchema),
-    defaultValues: { email: "" },
+    defaultValues: { email: initialEmail },
   });
 
   async function submit({ email }: EmailInput) {

@@ -22,6 +22,7 @@ describe("Better Auth frontend adapter", () => {
   it("uses a same-origin client without browser-stored tokens", () => {
     expect(createAuthClient).toHaveBeenCalledWith(expect.objectContaining({
       basePath: "/api/auth",
+      disableDefaultFetchPlugins: true,
       fetchOptions: { credentials: "same-origin", cache: "no-store" },
     }));
   });
@@ -42,6 +43,19 @@ describe("Better Auth frontend adapter", () => {
       userId: "user-1", platformRole: "admin", status: "suspended", emailVerified: true,
     });
     expect(sdk.getSession).toHaveBeenCalledWith({ fetchOptions: { signal } });
+  });
+
+  it("does not expose a legacy unverified session to the application", async () => {
+    sdk.getSession.mockResolvedValue({ error: null, data: { user: { id: "old-user", emailVerified: false } } });
+    expect(await authClient.getSession()).toBeNull();
+  });
+
+  it("includes the verification destination on returning-user sign-in", async () => {
+    sdk.signIn.email.mockResolvedValue({ error: { code: "EMAIL_NOT_VERIFIED", status: 403 } });
+    const input = { email: "learner@example.com", password: "example-password" };
+    const path = "/verify-email?returnTo=%2Fcheckout";
+    expect(await authClient.signIn(input, path)).toEqual({ ok: false, reason: "verificationRequired" });
+    expect(sdk.signIn.email).toHaveBeenCalledWith({ ...input, callbackURL: new URL(path, window.location.origin).href });
   });
 
   it("distinguishes a signed-out response from a service failure", async () => {

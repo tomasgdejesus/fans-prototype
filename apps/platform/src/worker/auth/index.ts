@@ -35,14 +35,14 @@ export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDel
     trustedOrigins: [validated.baseURL],
     emailVerification: {
       sendOnSignUp: true,
-      sendOnSignIn: false,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: false,
       sendVerificationEmail: async ({ user, url, token }) => {
         await sendAuthEmail(email, "verification", user.email, verificationPageURL(validated.baseURL, token, url));
       },
     },
     emailAndPassword: {
       ...authOptions.emailAndPassword,
-      requireEmailVerification: false,
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail(email, "passwordReset", user.email, url);
       },

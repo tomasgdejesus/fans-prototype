@@ -37,8 +37,15 @@ export function createApp(useDatabase: typeof withDatabase, useEmailSender = cre
           const auth = createAuth(db, config, { sendEmail: sender, enqueue: (task) => { tasks.push(task); } });
           return await auth.handler(c.req.raw);
         });
-        // Dispatch only after the auth handler and its transactions have completed.
-        if (response.ok) {
+        // Unverified sign-in deliberately returns 403 after queuing a new link.
+        // Dispatch after the handler's database scope closes, including that case.
+        let verificationRequired = false;
+        if (response.status === 403) {
+          const body: unknown = await response.clone().json().catch(() => null);
+          verificationRequired = typeof body === "object" && body !== null
+            && "code" in body && body.code === "EMAIL_NOT_VERIFIED";
+        }
+        if (response.ok || verificationRequired) {
           let waitUntil: ((promise: Promise<unknown>) => void) | undefined;
           try { waitUntil = c.executionCtx.waitUntil.bind(c.executionCtx); }
           catch { /* Node hosts await delivery below; Workers owns its task lifetime. */ }

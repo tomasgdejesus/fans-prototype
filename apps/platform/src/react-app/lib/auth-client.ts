@@ -7,6 +7,8 @@ import type { AuthSession } from "../../worker/env";
 // The SDK handles cookies; TanStack Query owns the frontend session state.
 const betterAuthClient = createAuthClient({
   basePath: "/api/auth",
+  // The SPA owns navigation, including the callback used in verification emails.
+  disableDefaultFetchPlugins: true,
   plugins: [inferAdditionalFields<Auth>()],
   fetchOptions: { credentials: "same-origin", cache: "no-store" },
 });
@@ -45,7 +47,7 @@ function emailResult(error: ServiceError | null): EmailRequestResult {
 export interface PublicAuthClient {
   configured: boolean;
   getSession(signal?: AbortSignal): Promise<PublicSession | null>;
-  signIn(input: LoginInput): Promise<AuthResult>;
+  signIn(input: LoginInput, verificationPath?: string): Promise<AuthResult>;
   register(input: RegistrationInput, verificationPath?: string): Promise<AuthResult>;
   signOut(): Promise<AuthResult>;
   requestPasswordReset(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
@@ -60,15 +62,16 @@ export const authClient: PublicAuthClient = {
     const { data, error } = await betterAuthClient.getSession({ fetchOptions: { signal } });
     // An outage must not be treated as a signed-out session.
     if (error) throw new Error("Session check failed.");
-    return data ? {
+    return data?.user.emailVerified ? {
       userId: data.user.id,
       platformRole: data.user.platformRole,
       status: data.user.status,
       emailVerified: data.user.emailVerified,
     } : null;
   },
-  async signIn(input) {
-    const { error } = await betterAuthClient.signIn.email(input);
+  async signIn(input, verificationPath = "/verify-email") {
+    const callbackURL = new URL(verificationPath, window.location.origin).href;
+    const { error } = await betterAuthClient.signIn.email({ ...input, callbackURL });
     return authResult(error);
   },
   async register(input, verificationPath = "/verify-email") {

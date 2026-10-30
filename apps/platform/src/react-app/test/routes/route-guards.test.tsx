@@ -9,7 +9,7 @@ import { publicSessionKey } from "../../features/auth/session";
 import { authClient, type PublicSession } from "../../lib/auth-client";
 import { renderApp } from "../helpers/render-app";
 
-const active: PublicSession = { userId: "user-1", platformRole: "user", status: "active", emailVerified: false };
+const active: PublicSession = { userId: "user-1", platformRole: "user", status: "active", emailVerified: true };
 const clients: QueryClient[] = [];
 function renderRoute(path: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

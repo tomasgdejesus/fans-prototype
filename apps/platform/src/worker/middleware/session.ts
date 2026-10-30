@@ -14,7 +14,8 @@ export function createSessionMiddleware(auth: Auth): MiddlewareHandler<WorkerEnv
       return c.json({ error: "Authentication is unavailable." }, 503);
     }
 
-    c.set("session", session);
+    // Ignore sessions issued before email verification became mandatory.
+    c.set("session", session?.user.emailVerified ? session : null);
     await next();
   };
 }
