@@ -7,7 +7,7 @@ export interface EmailBindings {
   SMTP_PORT?: string;
 }
 
-export type EmailConfig = { provider: "disabled" } | {
+export type EmailConfig = {
   provider: "maildev";
   from: string;
   host: string;
@@ -25,9 +25,8 @@ const maildevSchema = z.object({
 });
 
 export function readEmailConfig(values: EmailBindings = {}): EmailConfig {
-  const provider = values.EMAIL_PROVIDER ?? "disabled";
-  if (provider === "disabled") return { provider };
-  if (provider !== "maildev") throw new Error("EMAIL_PROVIDER must be disabled or maildev.");
+  const provider = values.EMAIL_PROVIDER;
+  if (provider !== "maildev") throw new Error("EMAIL_PROVIDER must select a supported email provider (maildev).");
   const parsed = maildevSchema.safeParse({
     from: values.EMAIL_FROM,
     host: values.SMTP_HOST,

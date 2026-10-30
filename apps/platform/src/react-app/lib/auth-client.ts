@@ -3,7 +3,6 @@ import { inferAdditionalFields } from "better-auth/client/plugins";
 import type { EmailInput, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
 import type { Auth } from "../../worker/auth";
 import type { AuthSession } from "../../worker/env";
-import { apiClient } from "./api-client";
 
 // The SDK handles cookies; TanStack Query owns the frontend session state.
 const betterAuthClient = createAuthClient({
@@ -45,7 +44,6 @@ function emailResult(error: ServiceError | null): EmailRequestResult {
 
 export interface PublicAuthClient {
   configured: boolean;
-  getEmailCapabilities(signal?: AbortSignal): Promise<{ emailVerification: boolean; passwordReset: boolean }>;
   getSession(signal?: AbortSignal): Promise<PublicSession | null>;
   signIn(input: LoginInput): Promise<AuthResult>;
   register(input: RegistrationInput, verificationPath?: string): Promise<AuthResult>;
@@ -58,11 +56,6 @@ export interface PublicAuthClient {
 
 export const authClient: PublicAuthClient = {
   configured: true,
-  async getEmailCapabilities(signal) {
-    const response = await apiClient.api["auth-capabilities"].$get({}, { init: { signal, cache: "no-store" } });
-    if (response.status !== 200) throw new Error("Email capability check failed.");
-    return response.json();
-  },
   async getSession(signal) {
     const { data, error } = await betterAuthClient.getSession({ fetchOptions: { signal } });
     // An outage must not be treated as a signed-out session.

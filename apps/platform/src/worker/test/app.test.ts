@@ -3,28 +3,6 @@ import app, { createApp } from "../app";
 import type { Database, withDatabase } from "../db/client";
 
 describe("platform API", () => {
-  it("reports email disabled without requiring a database connection", async () => {
-    const response = await app.request("/api/auth-capabilities");
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ emailVerification: false, passwordReset: false });
-    expect(response.headers.get("cache-control")).toBe("no-store");
-  });
-
-  it("reports configured email capabilities without returning credentials", async () => {
-    const response = await app.request("/api/auth-capabilities", {}, {
-      EMAIL_PROVIDER: "maildev", EMAIL_FROM: "FANS <noreply@fans.test>", SMTP_HOST: "127.0.0.1", SMTP_PORT: "1025",
-      DATABASE_URL: "postgresql://unused/unused", BETTER_AUTH_URL: "http://localhost:5173", BETTER_AUTH_SECRET: "test-only-secret-with-at-least-32-characters",
-    });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ emailVerification: true, passwordReset: true });
-  });
-
-  it("rejects invalid email configuration with a sanitized response", async () => {
-    const response = await app.request("/api/auth-capabilities", {}, { EMAIL_PROVIDER: "unsupported-private-value" });
-    expect(response.status).toBe(503);
-    expect(await response.json()).toEqual({ error: "Email configuration is invalid." });
-  });
-
   it("returns the health status", async () => {
     const response = await app.request("/api/health");
 

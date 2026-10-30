@@ -37,9 +37,14 @@ export async function sendAuthEmail(
 // Only mail work is deferred; Better Auth database operations remain awaited.
 export async function deliverEmailTasks(tasks: EmailTask[], waitUntil?: (promise: Promise<unknown>) => void): Promise<void> {
   if (!tasks.length) return;
-  const completed = Promise.all(tasks.map((task) => Promise.resolve().then(task).catch(() => {
-    console.error("Authentication email delivery failed.");
-  })));
+  const completed = Promise.allSettled(tasks.map((task) => Promise.resolve().then(task))).then((results) => {
+    if (results.some((result) => result.status === "rejected")) {
+      console.error("Authentication email delivery failed.");
+      // Surface a sanitized failure to the host; never attach the provider's error,
+      // which can contain recipients, message content, or authentication links.
+      throw new Error("Authentication email delivery failed.");
+    }
+  });
   if (waitUntil) waitUntil(completed);
   else await completed;
 }

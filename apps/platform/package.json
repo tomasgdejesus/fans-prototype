@@ -22,7 +22,7 @@
     "react-email": "^6.11.0"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.52.1",
+    "@cloudflare/vite-plugin": "1.62.4",
     "@eslint/js": "10.0.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",

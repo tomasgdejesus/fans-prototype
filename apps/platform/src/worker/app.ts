@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import type { WorkerEnv } from "./env";
 import { withDatabase } from "./db/client";
 import { createAuth, readAuthConfig } from "./auth";
-import { readEmailConfig } from "./email/config";
+import { readEmailConfig, type EmailConfig } from "./email/config";
 import { createEmailSender } from "./email";
 import { deliverEmailTasks } from "./email/auth";
 import type { EmailTask } from "./email/types";
@@ -11,17 +11,6 @@ import type { EmailTask } from "./email/types";
 // Choose connection ownership at the hosting boundary; routes only receive a db.
 export function createApp(useDatabase: typeof withDatabase, useEmailSender = createEmailSender) {
   const app = new Hono<WorkerEnv>()
-    .get("/api/auth-capabilities", (c) => {
-      c.header("Cache-Control", "no-store");
-      try {
-        const email = readEmailConfig(c.env);
-        const configured = Boolean(readAuthConfig({ baseURL: c.env?.BETTER_AUTH_URL, secret: c.env?.BETTER_AUTH_SECRET }) && c.env?.DATABASE_URL);
-        const enabled = configured && email.provider !== "disabled";
-        return c.json({ emailVerification: enabled, passwordReset: enabled });
-      } catch {
-        return c.json({ error: "Email configuration is invalid." }, 503);
-      }
-    })
     .all("/api/auth/*", async (c) => {
       const config = readAuthConfig({
         baseURL: c.env?.BETTER_AUTH_URL,
@@ -31,12 +20,21 @@ export function createApp(useDatabase: typeof withDatabase, useEmailSender = cre
         return c.json({ error: "Authentication is unavailable." }, 503);
       }
 
+      let emailConfig: EmailConfig;
       try {
-        const sender = useEmailSender(readEmailConfig(c.env));
+        emailConfig = readEmailConfig(c.env);
+      } catch (error) {
+        // Config validation errors contain only fixed descriptions, never values.
+        console.error(error instanceof Error ? error.message : "Email configuration is invalid.");
+        return c.json({ error: "Email configuration is invalid." }, 503);
+      }
+
+      try {
+        const sender = useEmailSender(emailConfig);
         const tasks: EmailTask[] = [];
         const response = await useDatabase(c.env.DATABASE_URL, async (db) => {
           // Complete database work before the runner's connection scope ends.
-          const auth = createAuth(db, config, sender ? { sendEmail: sender, enqueue: (task) => { tasks.push(task); } } : undefined);
+          const auth = createAuth(db, config, { sendEmail: sender, enqueue: (task) => { tasks.push(task); } });
           return await auth.handler(c.req.raw);
         });
         // Dispatch only after the auth handler and its transactions have completed.

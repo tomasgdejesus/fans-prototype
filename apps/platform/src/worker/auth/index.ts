@@ -24,7 +24,7 @@ export function readAuthConfig(values: Partial<AuthConfig>): AuthConfig | null {
   }
 }
 
-export function createAuth(db: Database, config: AuthConfig, email?: AuthEmailDelivery) {
+export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDelivery) {
   const validated = readAuthConfig(config);
   if (!validated) throw new Error("Invalid authentication configuration.");
 
@@ -33,19 +33,19 @@ export function createAuth(db: Database, config: AuthConfig, email?: AuthEmailDe
     baseURL: validated.baseURL,
     secret: validated.secret,
     trustedOrigins: [validated.baseURL],
-    emailVerification: email ? {
+    emailVerification: {
       sendOnSignUp: true,
       sendOnSignIn: false,
       sendVerificationEmail: async ({ user, url, token }) => {
         await sendAuthEmail(email, "verification", user.email, verificationPageURL(validated.baseURL, token, url));
       },
-    } : undefined,
+    },
     emailAndPassword: {
       ...authOptions.emailAndPassword,
       requireEmailVerification: false,
-      sendResetPassword: email ? async ({ user, url }) => {
+      sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail(email, "passwordReset", user.email, url);
-      } : undefined,
+      },
     },
     database: drizzleAdapter(db, {
       provider: "pg",

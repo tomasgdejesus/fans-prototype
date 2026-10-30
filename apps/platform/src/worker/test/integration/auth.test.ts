@@ -7,7 +7,7 @@ import { withTestDatabase } from "../helpers/database";
 import type { EmailMessage } from "../../email/types";
 
 const messages: EmailMessage[] = [];
-const app = createApp(withTestDatabase, (config) => config.provider === "disabled" ? null : async (message) => { messages.push(message); });
+const app = createApp(withTestDatabase, () => async (message) => { messages.push(message); });
 
 // Exercise the production route and request-owned connections against an explicitly
 // selected, migrated test database. Never fall back to DATABASE_URL.

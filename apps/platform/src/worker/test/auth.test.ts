@@ -12,7 +12,11 @@ vi.mock("../db/client", async (importOriginal) => ({
 }));
 
 const origin = "http://localhost:5173";
+const emailBindings = {
+  EMAIL_PROVIDER: "maildev", EMAIL_FROM: "FANS <noreply@fans.test>", SMTP_HOST: "127.0.0.1", SMTP_PORT: "1025",
+};
 const bindings = {
+  ...emailBindings,
   DATABASE_URL: "postgresql://unused:unused@localhost/unused",
   BETTER_AUTH_URL: origin,
   BETTER_AUTH_SECRET: "test-only-secret-with-at-least-32-characters",
@@ -21,6 +25,7 @@ const bindings = {
 let pool: Pool;
 let db: Database;
 let events: string[];
+const delivery = { sendEmail: vi.fn().mockResolvedValue(undefined) };
 
 async function useTestDatabase<T>(url: string | undefined, run: (db: Database) => Promise<T>): Promise<T> {
   expect(url).toBe(bindings.DATABASE_URL);
@@ -38,6 +43,7 @@ beforeEach(() => {
   db = drizzle({ client: pool, schema });
   events = [];
   vi.mocked(withDatabase).mockImplementation(useTestDatabase);
+  delivery.sendEmail.mockClear();
 });
 
 afterEach(async () => {
@@ -102,8 +108,21 @@ describe("Better Auth HTTP integration", () => {
     expect(withDatabase).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { EMAIL_PROVIDER: undefined }, { EMAIL_PROVIDER: "disabled" }, { EMAIL_PROVIDER: "private-unsupported-provider" },
+    { EMAIL_FROM: undefined }, { SMTP_HOST: undefined }, { SMTP_PORT: undefined }, { SMTP_PORT: "invalid-private-port" },
+  ])("rejects invalid email configuration before opening the database: %o", async (override) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await app.request(`${origin}/api/auth/ok`, {}, { ...bindings, ...override });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Email configuration is invalid." });
+    expect(withDatabase).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledOnce();
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/private-unsupported-provider|invalid-private-port/);
+  });
+
   it("forwards the raw request and preserves the handler's status and cookies", async () => {
-    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET });
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
     vi.spyOn(auth, "handler").mockImplementation(async (request) => {
       events.push("handler");
       expect(request.method).toBe("POST");
@@ -134,10 +153,10 @@ describe("Better Auth HTTP integration", () => {
 
   it.each([200, 500])("dispatches staged mail only after successful database work (status %i)", async (status) => {
     const sendEmail = vi.fn(async () => { events.push("mail"); });
-    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET });
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
     vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, delivery) => {
       vi.spyOn(auth, "handler").mockImplementation(async () => {
-        delivery?.enqueue?.(() => sendEmail());
+        delivery.enqueue?.(() => sendEmail());
         return new Response("result", { status });
       });
       return auth;
@@ -146,6 +165,59 @@ describe("Better Auth HTTP integration", () => {
     expect(response.status).toBe(status);
     expect(events).toEqual(status === 200 ? ["open", "close", "mail"] : ["open", "close"]);
     expect(sendEmail).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+  });
+
+  it("reports delivery failure on an awaiting host after closing the database scope", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const sendEmail = vi.fn(async () => {
+      events.push("mail");
+      throw new Error("private-recipient-token");
+    });
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
+    vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, email) => {
+      vi.spyOn(auth, "handler").mockImplementation(async () => {
+        email.enqueue?.(sendEmail);
+        return new Response("accepted");
+      });
+      return auth;
+    });
+    const response = await createApp(withDatabase, () => sendEmail).request(`${origin}/api/auth/test`, {}, bindings);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Authentication is unavailable." });
+    expect(events).toEqual(["open", "close", "mail"]);
+    expect(log).toHaveBeenCalledWith("Authentication email delivery failed.");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("private-recipient-token");
+  });
+
+  it("keeps the Worker response neutral while exposing background delivery failures to its host", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    let completed!: Promise<unknown>;
+    const executionCtx = {
+      waitUntil(promise: Promise<unknown>) {
+        completed = promise;
+        void promise.catch(() => {});
+      },
+      passThroughOnException() {},
+      props: {}, exports: {},
+    };
+    const sendEmail = vi.fn(async () => {
+      events.push("mail");
+      throw new Error("private-recipient-token");
+    });
+    const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
+    vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, email) => {
+      vi.spyOn(auth, "handler").mockImplementation(async () => {
+        email.enqueue?.(sendEmail);
+        return new Response("accepted");
+      });
+      return auth;
+    });
+    const response = await createApp(withDatabase, () => sendEmail).request(`${origin}/api/auth/test`, {}, bindings, executionCtx);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("accepted");
+    await expect(completed).rejects.toThrow("Authentication email delivery failed.");
+    expect(events).toEqual(["open", "close", "mail"]);
+    expect(log).toHaveBeenCalledExactlyOnceWith("Authentication email delivery failed.");
   });
 
   it("does not expose database errors or secrets", async () => {

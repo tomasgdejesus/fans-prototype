@@ -6,7 +6,7 @@ BETTER_AUTH_URL=http://localhost:5173
 # Generate a secret with: openssl rand -base64 32
 BETTER_AUTH_SECRET=
 
-# Local email; start the container with pnpm mail:up. Use disabled to turn mail off.
+# Required email provider; start local MailDev with pnpm mail:up.
 EMAIL_PROVIDER=maildev
 EMAIL_FROM="FANS <noreply@fans.test>"
 SMTP_HOST=127.0.0.1

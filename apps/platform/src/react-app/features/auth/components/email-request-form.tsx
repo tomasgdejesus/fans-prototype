@@ -8,21 +8,18 @@ import { authClient, type AuthFailure } from "../../../lib/auth-client";
 import { validationMessage } from "../../../lib/validation";
 import { accountPath } from "../navigation";
 import { AuthError } from "./auth-card";
-import { useEmailCapabilities } from "../email-capabilities";
 
 export function EmailRequestForm({ kind, destination }: { kind: "recovery" | "verification"; destination: string }) {
   const { t } = useTranslation();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<AuthFailure | null>(null);
-  const capabilities = useEmailCapabilities();
-  const permitted = authClient.configured && (kind === "recovery" ? capabilities.data?.passwordReset : capabilities.data?.emailVerification) === true;
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EmailInput>({
     resolver: zodResolver(emailInputSchema),
     defaultValues: { email: "" },
   });
 
   async function submit({ email }: EmailInput) {
-    if (!permitted || isSubmitting) return;
+    if (!authClient.configured || isSubmitting) return;
     setError(null);
     try {
       const redirectTo = new URL(accountPath(kind === "recovery" ? "/reset-password" : "/verify-email", destination), window.location.origin).href;
@@ -39,17 +36,11 @@ export function EmailRequestForm({ kind, destination }: { kind: "recovery" | "ve
   return (
     <Stack>
       <AuthError reason={error} />
-      {authClient.configured && capabilities.isPending && <Alert role="status">{t("publicPages.auth.emailChecking")}</Alert>}
-      {capabilities.isError && <Alert color="red" role="alert">
-        {t("publicPages.auth.emailStatusError")}
-        <Button onClick={() => void capabilities.refetch()} loading={capabilities.isFetching}>{t("publicPages.auth.retry")}</Button>
-      </Alert>}
-      {authClient.configured && capabilities.isSuccess && !permitted && <Alert>{t(kind === "recovery" ? "publicPages.auth.recoveryUnavailable" : "publicPages.auth.resendUnavailable")}</Alert>}
       <form onSubmit={handleSubmit(submit)} noValidate>
         <Stack>
           <TextInput label={t("publicPages.auth.email")} type="email" autoComplete="email" required error={validationMessage(errors.email?.message, t)}
             {...register("email")} />
-          <Button type="submit" loading={isSubmitting} disabled={!permitted}>{t(kind === "recovery" ? "publicPages.auth.sendReset" : "publicPages.auth.resend")}</Button>
+          <Button type="submit" loading={isSubmitting} disabled={!authClient.configured}>{t(kind === "recovery" ? "publicPages.auth.sendReset" : "publicPages.auth.resend")}</Button>
         </Stack>
       </form>
     </Stack>

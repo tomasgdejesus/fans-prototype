@@ -62,15 +62,6 @@ describe("Better Auth frontend adapter", () => {
     expect(await authClient.signIn({ email: "learner@example.com", password: "wrong" })).toEqual({ ok: false, reason });
   });
 
-  it("loads email availability from the backend", async () => {
-    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ emailVerification: false, passwordReset: false }), {
-      headers: { "content-type": "application/json" },
-    }));
-    vi.stubGlobal("fetch", fetch);
-    expect(await authClient.getEmailCapabilities()).toEqual({ emailVerification: false, passwordReset: false });
-    expect(fetch).toHaveBeenCalledOnce();
-  });
-
   it("keeps unknown-account recovery neutral and uses the SDK's redirect field", async () => {
     sdk.requestPasswordReset.mockResolvedValue({ error: { code: "USER_NOT_FOUND", status: 400 } });
     const input = { email: "unknown@example.com", redirectTo: "https://fans.invalid/reset-password" };

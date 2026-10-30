@@ -14,7 +14,6 @@ import { renderApp } from "../helpers/render-app";
 
 beforeEach(() => {
   authClient.configured = true;
-  vi.spyOn(authClient, "getEmailCapabilities").mockResolvedValue({ emailVerification: true, passwordReset: true });
   vi.spyOn(authClient, "getSession").mockResolvedValue(null);
 });
 
@@ -191,21 +190,12 @@ describe("public account flows", () => {
     expect(register).toHaveBeenCalledWith({ email: "learner@example.com", password: "example-password" }, expect.stringContaining("/verify-email?returnTo="));
   });
 
-  it("disables recovery requests while email delivery is unavailable", async () => {
-    vi.mocked(authClient.getEmailCapabilities).mockResolvedValue({ emailVerification: false, passwordReset: false });
-    renderApp(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>);
-    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
-    expect(await screen.findByText(/Password recovery is not available yet/)).toBeInTheDocument();
-  });
-
-  it("can retry a failed email capability check", async () => {
-    vi.mocked(authClient.getEmailCapabilities).mockRejectedValueOnce(new Error("Unavailable"))
-      .mockResolvedValue({ emailVerification: true, passwordReset: true });
-    renderApp(<MemoryRouter><ForgotPasswordPage /></MemoryRouter>);
-    expect(await screen.findByText("We could not check email services. Please try again.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled());
+  it.each([
+    { Page: ForgotPasswordPage, action: "Send reset link" },
+    { Page: VerifyEmailPage, action: "Resend verification email" },
+  ])("offers $action without an email availability check", ({ Page, action }) => {
+    renderApp(<MemoryRouter><Page /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: action })).toBeEnabled();
   });
 
   it("does not claim an email was sent when the request fails", async () => {

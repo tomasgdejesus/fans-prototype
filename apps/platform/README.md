@@ -96,7 +96,7 @@ Configure shared rate-limit storage; the default in-memory limiter is per isolat
 Email configuration and senders: `src/worker/email/`. React Email templates:
 `src/worker/email/templates/`. Configure `EMAIL_PROVIDER`, `EMAIL_FROM`,
 `SMTP_HOST`, and `SMTP_PORT` in `.dev.vars` using `.dev.vars.example`.
-`EMAIL_PROVIDER=disabled` (also the default) turns email off. From the repository root:
+Email configuration is required. From the repository root:
 
 ```bash
 pnpm mail:up
@@ -110,6 +110,7 @@ pnpm mail:down
 `pnpm check` requires neither service. For a Workers runtime smoke test, register
 in the running app, open its verification email, then complete forgot/reset password.
 
-Email availability comes from `/api/auth-capabilities`; verification is sent at
-signup but is not required for sign-in. Future REST providers implement the same
+Verification is sent at signup but is not required for sign-in.
+Delivery failures are logged; accepted requests do not guarantee delivery.
+Future REST providers implement the same
 `SendEmail` type and are selected in `src/worker/email/index.ts`.

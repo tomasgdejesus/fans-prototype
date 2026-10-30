@@ -10,7 +10,7 @@ describe("MailDev SMTP delivery", () => {
     const sender = createEmailSender(readEmailConfig({
       EMAIL_PROVIDER: "maildev", EMAIL_FROM: "FANS <noreply@fans.test>",
       SMTP_HOST: process.env.SMTP_HOST ?? "127.0.0.1", SMTP_PORT: process.env.SMTP_PORT ?? "1025",
-    }))!;
+    }));
     const inbox = process.env.MAILDEV_URL ?? "http://127.0.0.1:1080";
     for (const kind of ["verification", "passwordReset"] as const) {
       const message = await renderAuthEmail(kind, recipient, `http://localhost:5173/${kind}?token=test-token`);

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { readEmailConfig } from "../email/config";
-import { createEmailSender } from "../email";
 import { deliverEmailTasks, sendAuthEmail, verificationPageURL } from "../email/auth";
 import type { EmailTask } from "../email/types";
 
@@ -11,9 +10,10 @@ vi.mock("../email/templates/auth", () => ({
 const settings = { EMAIL_PROVIDER: "maildev", EMAIL_FROM: "FANS <noreply@fans.test>", SMTP_HOST: "127.0.0.1", SMTP_PORT: "1025" };
 
 describe("email configuration", () => {
-  it("disables mail without loading a transport when it is not configured", () => {
-    expect(readEmailConfig()).toEqual({ provider: "disabled" });
-    expect(createEmailSender(readEmailConfig())).toBeNull();
+  it("requires an explicit provider and complete configuration", () => {
+    expect(() => readEmailConfig()).toThrow("EMAIL_PROVIDER must select a supported email provider");
+    expect(() => readEmailConfig({ EMAIL_PROVIDER: "maildev" })).toThrow("MailDev requires");
+    expect(() => readEmailConfig({ ...settings, EMAIL_PROVIDER: "disabled" })).toThrow("EMAIL_PROVIDER must select a supported email provider");
   });
   it("reads explicit MailDev configuration", () => {
     expect(readEmailConfig(settings)).toEqual({ provider: "maildev", from: settings.EMAIL_FROM, host: "127.0.0.1", port: 1025 });
@@ -44,10 +44,24 @@ describe("auth email delivery", () => {
     complete();
     await waitUntil.mock.calls[0][0];
   });
-  it("logs a failed delivery without leaking the message or token", async () => {
+  it("logs and rejects a failed delivery without leaking the message or token", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      await deliverEmailTasks([async () => { throw new Error("private reset token"); }]);
+      await expect(deliverEmailTasks([async () => { throw new Error("private reset token"); }]))
+        .rejects.toThrow("Authentication email delivery failed.");
+      expect(log).toHaveBeenCalledExactlyOnceWith("Authentication email delivery failed.");
+    } finally { log.mockRestore(); }
+  });
+  it("surfaces background failures to the hosting lifetime handler", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    let completed!: Promise<unknown>;
+    try {
+      await deliverEmailTasks([async () => { throw new Error("private reset token"); }], (promise) => {
+        completed = promise;
+        // The host owns this rejection once the HTTP response has been returned.
+        void promise.catch(() => {});
+      });
+      await expect(completed).rejects.toThrow("Authentication email delivery failed.");
       expect(log).toHaveBeenCalledExactlyOnceWith("Authentication email delivery failed.");
     } finally { log.mockRestore(); }
   });
