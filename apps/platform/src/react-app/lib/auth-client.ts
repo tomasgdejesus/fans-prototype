@@ -1,8 +1,9 @@
 import { createAuthClient } from "better-auth/client";
 import { inferAdditionalFields } from "better-auth/client/plugins";
-import type { EmailInput, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
+import type { EmailInput, EmailVerificationStatus, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
 import type { Auth } from "../../worker/auth";
 import type { AuthSession } from "../../worker/env";
+import { apiClient } from "./api-client";
 
 // The SDK handles cookies; TanStack Query owns the frontend session state.
 const betterAuthClient = createAuthClient({
@@ -53,6 +54,7 @@ export interface PublicAuthClient {
   requestPasswordReset(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
   resetPassword(input: ResetPasswordInput): Promise<AuthResult>;
   verifyEmail(input: { token: string }): Promise<AuthResult>;
+  getVerificationStatus(token: string, signal?: AbortSignal): Promise<EmailVerificationStatus>;
   resendVerification(input: EmailInput & { redirectTo: string }): Promise<EmailRequestResult>;
 }
 
@@ -95,6 +97,13 @@ export const authClient: PublicAuthClient = {
     // No callbackURL: the SDK returns the validation result without navigating.
     const { error } = await betterAuthClient.verifyEmail({ query: { token } });
     return authResult(error);
+  },
+  async getVerificationStatus(token, signal) {
+    const response = await apiClient.api.auth["verification-status"].$post({ json: { token } }, {
+      init: { signal, cache: "no-store", credentials: "same-origin" },
+    });
+    if (response.status !== 200) throw new Error("Verification status check failed.");
+    return (await response.json()).status;
   },
   async resendVerification({ email, redirectTo }) {
     const { error } = await betterAuthClient.sendVerificationEmail({ email, callbackURL: redirectTo });

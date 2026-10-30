@@ -94,7 +94,8 @@ Configure shared rate-limit storage; the default in-memory limiter is per isolat
 ### Local email
 
 Email configuration and senders: `src/worker/email/`. React Email templates:
-`src/worker/email/templates/`. Configure `EMAIL_PROVIDER`, `EMAIL_FROM`,
+`src/worker/email/templates/`. Verification expiry: `src/shared/constants/auth.ts`.
+Configure `EMAIL_PROVIDER`, `EMAIL_FROM`,
 `SMTP_HOST`, and `SMTP_PORT` in `.dev.vars` using `.dev.vars.example`.
 Email configuration is required. From the repository root:
 

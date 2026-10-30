@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
   const destination = allowedDestination(search.get("returnTo"));
   return (
     <AuthCard title={t("auth.forgotPassword.title")} description={t("auth.forgotPassword.description")}>
-      <EmailRequestForm kind="recovery" destination={destination} />
+      <EmailRequestForm destination={destination} />
       <Anchor component={Link} to={accountPath("/login", destination)}>{t("common.actions.backToLogIn")}</Anchor>
     </AuthCard>
   );

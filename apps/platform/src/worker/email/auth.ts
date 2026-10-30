@@ -1,4 +1,4 @@
-import type { SendEmail, EmailTask } from "./types";
+import type { SendEmail, EmailTask, AuthEmailKind } from "./types";
 
 export interface AuthEmailDelivery {
   sendEmail: SendEmail;
@@ -22,7 +22,7 @@ export function verificationPageURL(baseURL: string, token: string, generatedURL
 
 export async function sendAuthEmail(
   delivery: AuthEmailDelivery,
-  kind: "verification" | "passwordReset",
+  kind: AuthEmailKind,
   to: string,
   url: string,
 ): Promise<void> {

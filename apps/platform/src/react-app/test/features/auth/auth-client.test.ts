@@ -5,7 +5,9 @@ const sdk = vi.hoisted(() => ({
   signOut: vi.fn(), requestPasswordReset: vi.fn(), resetPassword: vi.fn(),
   verifyEmail: vi.fn(), sendVerificationEmail: vi.fn(),
 }));
+const statusRequest = vi.hoisted(() => vi.fn());
 vi.mock("better-auth/client", () => ({ createAuthClient: vi.fn(() => sdk) }));
+vi.mock("../../../lib/api-client", () => ({ apiClient: { api: { auth: { "verification-status": { $post: statusRequest } } } } }));
 
 import { createAuthClient } from "better-auth/client";
 import { authClient } from "../../../lib/auth-client";
@@ -13,6 +15,7 @@ import { authClient } from "../../../lib/auth-client";
 beforeEach(() => {
   for (const method of [sdk.getSession, sdk.signIn.email, sdk.signUp.email, sdk.signOut,
     sdk.requestPasswordReset, sdk.resetPassword, sdk.verifyEmail, sdk.sendVerificationEmail]) method.mockReset();
+  statusRequest.mockReset();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -81,6 +84,21 @@ describe("Better Auth frontend adapter", () => {
     const input = { email: "unknown@example.com", redirectTo: "https://fans.invalid/reset-password" };
     expect(await authClient.requestPasswordReset(input)).toEqual({ ok: true });
     expect(sdk.requestPasswordReset).toHaveBeenCalledWith(input);
+  });
+
+  it("reads verified status without consuming the token or including it in a URL", async () => {
+    statusRequest.mockResolvedValue(Response.json({ status: "verified" }));
+    const signal = new AbortController().signal;
+    expect(await authClient.getVerificationStatus("signed-token", signal)).toBe("verified");
+    expect(statusRequest).toHaveBeenCalledExactlyOnceWith({ json: { token: "signed-token" } }, {
+      init: { signal, cache: "no-store", credentials: "same-origin" },
+    });
+    expect(sdk.verifyEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not turn a failed status lookup into a pending verification", async () => {
+    statusRequest.mockResolvedValue(new Response(null, { status: 503 }));
+    await expect(authClient.getVerificationStatus("signed-token")).rejects.toThrow("Verification status check failed.");
   });
 
   it("uses Better Auth password-reset and verification payloads", async () => {

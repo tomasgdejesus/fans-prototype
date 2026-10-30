@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { EMAIL_VERIFICATION_EXPIRES_IN_SECONDS } from "../../shared/constants/auth";
 import type { Database } from "../db/client";
 import * as authSchema from "../db/schema/auth";
 import { authOptions } from "./options";
@@ -34,11 +35,15 @@ export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDel
     secret: validated.secret,
     trustedOrigins: [validated.baseURL],
     emailVerification: {
+      expiresIn: EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
       sendOnSignUp: true,
       sendOnSignIn: true,
       autoSignInAfterVerification: false,
       sendVerificationEmail: async ({ user, url, token }) => {
         await sendAuthEmail(email, "verification", user.email, verificationPageURL(validated.baseURL, token, url));
+      },
+      afterEmailVerification: async (user) => {
+        await sendAuthEmail(email, "welcome", user.email, new URL("/login", validated.baseURL).href);
       },
     },
     emailAndPassword: {

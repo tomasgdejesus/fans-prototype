@@ -14,6 +14,8 @@ export const newPasswordSchema = requiredStringSchema.pipe(z.string()
   .refine((password) => password.length <= PASSWORD_MAX_LENGTH, { error: "validation.passwordTooLong" }));
 
 export const emailInputSchema = z.strictObject({ email: emailSchema });
+export const verificationStatusInputSchema = z.strictObject({ token: requiredStringSchema.max(8192) });
+export type EmailVerificationStatus = "pending" | "verified" | "invalid";
 
 // Existing credentials are not subject to the current new-password policy.
 export const loginInputSchema = emailInputSchema.extend({ password: requiredStringSchema });

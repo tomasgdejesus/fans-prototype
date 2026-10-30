@@ -1,10 +1,11 @@
 import { Body, Head, Heading, Html, Link, Preview, Text, render, toPlainText } from "react-email";
-import type { EmailMessage } from "../types";
+import { EMAIL_VERIFICATION_EXPIRES_IN_SECONDS } from "../../../shared/constants/auth";
+import type { AuthEmailKind, EmailMessage } from "../types";
 
-type AuthEmailKind = "verification" | "passwordReset";
 const copy = {
   verification: { subject: "Verify your FANS email address", action: "Verify email address", description: "Confirm this email address for your FANS account." },
   passwordReset: { subject: "Reset your FANS password", action: "Reset password", description: "Use this link to choose a new password for your FANS account." },
+  welcome: { subject: "Welcome to FANS", action: "Log in", description: "Your email address has been verified. You can now log in to your FANS account." },
 };
 
 export async function renderAuthEmail(kind: AuthEmailKind, to: string, url: string): Promise<EmailMessage> {
@@ -17,7 +18,8 @@ export async function renderAuthEmail(kind: AuthEmailKind, to: string, url: stri
         <Heading>{message.subject}</Heading>
         <Text>{message.description}</Text>
         <Link href={url}>{message.action}</Link>
-        <Text>If you did not request this email, you can ignore it.</Text>
+        {kind === "verification" && <Text>{`Verification link will expire in ${EMAIL_VERIFICATION_EXPIRES_IN_SECONDS / 60} minutes.`}</Text>}
+        {kind !== "welcome" && <Text>If you did not request this email, you can ignore it.</Text>}
       </Body>
     </Html>,
   );

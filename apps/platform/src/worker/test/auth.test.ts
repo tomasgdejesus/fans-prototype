@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { sign } from "hono/jwt";
 import app, { createApp } from "../app";
 import * as authModule from "../auth";
 import { withDatabase, type Database } from "../db/client";
@@ -53,6 +54,43 @@ afterEach(async () => {
 });
 
 describe("Better Auth HTTP integration", () => {
+  it("checks a token without exposing its account or invoking email delivery", async () => {
+    const token = await sign({ email: "learner@example.com", exp: Math.floor(Date.now() / 1000) + 3600 }, bindings.BETTER_AUTH_SECRET, "HS256");
+    const limit = vi.fn().mockResolvedValue([{ emailVerified: true }]);
+    const select = vi.fn(() => ({ from: () => ({ where: () => ({ limit }) }) }));
+    const database = { select } as unknown as Database;
+    const runner: typeof withDatabase = async (_url, run) => run(database);
+    const sender = vi.fn(() => delivery.sendEmail);
+    const response = await createApp(runner, sender).request(`${origin}/api/auth/verification-status`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }),
+    }, bindings);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ status: "verified" });
+    expect(select).toHaveBeenCalledOnce();
+    expect(sender).not.toHaveBeenCalled();
+  });
+
+  it("rejects a forged status token without opening the database", async () => {
+    const response = await app.request(`${origin}/api/auth/verification-status`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: "forged-token" }),
+    }, bindings);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "invalid" });
+    expect(withDatabase).not.toHaveBeenCalled();
+  });
+
+  it.each([{}, { token: "" }, { token: 7 }, { token: "x".repeat(8193) }, { token: "signed", email: "learner@example.com" }])(
+    "rejects invalid verification-status input before opening the database", async (input) => {
+      const response = await app.request(`${origin}/api/auth/verification-status`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
+      }, bindings);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "Invalid verification request." });
+      expect(withDatabase).not.toHaveBeenCalled();
+    },
+  );
+
   it("mounts the real Better Auth health endpoint", async () => {
     const response = await app.request(`${origin}/api/auth/ok`, {}, bindings);
     expect(response.status).toBe(200);
@@ -157,7 +195,9 @@ describe("Better Auth HTTP integration", () => {
     { status: 403, body: JSON.stringify({ code: "INVALID_ORIGIN" }), sends: false },
     { status: 403, body: "not JSON", sends: false },
     { status: 500, body: JSON.stringify({ code: "EMAIL_NOT_VERIFIED" }), sends: false },
-  ])("dispatches staged mail after the database scope closes: $status $body", async ({ status, body, sends }) => {
+    { status: 302, body: "redirect", sends: true, path: "/api/auth/verify-email" },
+    { status: 302, body: "redirect", sends: false, path: "/api/auth/test" },
+  ])("dispatches staged mail after the database scope closes: $status $body", async ({ status, body, sends, path }) => {
     const sendEmail = vi.fn(async () => { events.push("mail"); });
     const auth = authModule.createAuth(db, { baseURL: origin, secret: bindings.BETTER_AUTH_SECRET }, delivery);
     vi.spyOn(authModule, "createAuth").mockImplementation((_db, _config, delivery) => {
@@ -167,7 +207,7 @@ describe("Better Auth HTTP integration", () => {
       });
       return auth;
     });
-    const response = await createApp(withDatabase, () => sendEmail).request(`${origin}/api/auth/test`, {}, bindings);
+    const response = await createApp(withDatabase, () => sendEmail).request(`${origin}${path ?? "/api/auth/test"}`, {}, bindings);
     expect(response.status).toBe(status);
     expect(await response.text()).toBe(body);
     expect(events).toEqual(sends ? ["open", "close", "mail"] : ["open", "close"]);

@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Client } from "pg";
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
+import { EMAIL_VERIFICATION_EXPIRES_IN_SECONDS, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../../shared/constants/auth";
 import { createApp } from "../../app";
 import { withTestDatabase } from "../helpers/database";
 import type { EmailMessage } from "../../email/types";
@@ -69,6 +69,13 @@ function verificationLink(message = messages.at(-1)!): URL {
 
 function verifyLink(link: URL) {
   return app.request(`${origin}/api/auth/verify-email?token=${encodeURIComponent(link.searchParams.get("token")!)}`, {}, bindings);
+}
+
+async function verificationStatus(link: URL) {
+  const response = await post("/verification-status", { token: link.searchParams.get("token")! });
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  return response.json<{ status: "pending" | "verified" | "invalid" }>();
 }
 
 describe("Better Auth PostgreSQL integration", () => {
@@ -163,15 +170,29 @@ describe("Better Auth PostgreSQL integration", () => {
     expect(cookieHeader(signup)).not.toContain("better-auth.session_token=");
     expect(messages).toHaveLength(1);
     expect(messages[0].to).toBe(email);
+    expect(messages[0].text).toContain(`Verification link will expire in ${EMAIL_VERIFICATION_EXPIRES_IN_SECONDS / 60} minutes.`);
     const link = verificationLink(messages[0]);
     expect(link.pathname).toBe("/verify-email");
     expect(link.searchParams.get("returnTo")).toBe("/checkout");
     expect(link.searchParams.get("token")).toBeTruthy();
+    expect(await verificationStatus(link)).toEqual({ status: "pending" });
+    expect(messages).toHaveLength(1);
+    expect(await getSession()).toBeNull();
 
     expect((await post("/send-verification-email", { email, callbackURL: destination })).status).toBe(200);
     expect(messages).toHaveLength(2);
     const verify = await verifyLink(link);
     expect(verify.status).toBe(200);
+    expect(messages).toHaveLength(3);
+    expect(messages[2]).toMatchObject({ to: email, subject: "Welcome to FANS" });
+    expect(messages[2].text).toContain(`${origin}/login`);
+    expect(messages[2].text).not.toContain("token=");
+    expect(await verificationStatus(link)).toEqual({ status: "verified" });
+    expect(messages).toHaveLength(3);
+    // Reopening a still-valid link succeeds without another welcome email.
+    expect((await verifyLink(link)).status).toBe(200);
+    expect((await post("/send-verification-email", { email, callbackURL: destination })).status).toBe(200);
+    expect(messages).toHaveLength(3);
     expect(cookieHeader(verify)).not.toContain("better-auth.session_token=");
     expect(await getSession()).toBeNull();
     const login = await post("/sign-in/email", { email, password });
@@ -206,11 +227,15 @@ describe("Better Auth PostgreSQL integration", () => {
     expect(signup.status).toBe(200);
     expect(messages).toHaveLength(1);
     const original = verificationLink();
-    const payload = JSON.parse(Buffer.from(original.searchParams.get("token")!.split(".")[1], "base64url").toString()) as { exp: number };
+    const payload = JSON.parse(Buffer.from(original.searchParams.get("token")!.split(".")[1], "base64url").toString()) as { exp: number; iat: number };
+    // Issued-at and expiry timestamps may straddle a one-second boundary.
+    expect(payload.exp - payload.iat).toBeGreaterThanOrEqual(EMAIL_VERIFICATION_EXPIRES_IN_SECONDS);
+    expect(payload.exp - payload.iat).toBeLessThanOrEqual(EMAIL_VERIFICATION_EXPIRES_IN_SECONDS + 1);
     // Advance only Date so PostgreSQL sockets and deadlines keep using real timers.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime((payload.exp + 1) * 1000);
     try {
+      expect(await verificationStatus(original)).toEqual({ status: "invalid" });
       const expired = await verifyLink(original);
       expect(expired.status).toBe(401);
       expect(await expired.json<{ code: string }>()).toMatchObject({ code: "TOKEN_EXPIRED" });

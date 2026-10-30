@@ -1,8 +1,12 @@
 import { Hono } from "hono";
-import { sql } from "drizzle-orm";
+import { validator } from "hono/validator";
+import { eq, sql } from "drizzle-orm";
+import { verificationStatusInputSchema } from "../shared/contracts/auth";
 import type { WorkerEnv } from "./env";
 import { withDatabase } from "./db/client";
 import { createAuth, readAuthConfig } from "./auth";
+import { readVerificationStatus } from "./auth/verification-status";
+import { user } from "./db/schema/auth";
 import { readEmailConfig, type EmailConfig } from "./email/config";
 import { createEmailSender } from "./email";
 import { deliverEmailTasks } from "./email/auth";
@@ -11,6 +15,26 @@ import type { EmailTask } from "./email/types";
 // Choose connection ownership at the hosting boundary; routes only receive a db.
 export function createApp(useDatabase: typeof withDatabase, useEmailSender = createEmailSender) {
   const app = new Hono<WorkerEnv>()
+    .post("/api/auth/verification-status", validator("json", (value, c) => {
+      c.header("Cache-Control", "no-store");
+      const parsed = verificationStatusInputSchema.safeParse(value);
+      if (!parsed.success) return c.json({ error: "Invalid verification request." }, 400);
+      return parsed.data;
+    }), async (c) => {
+      const config = readAuthConfig({ baseURL: c.env?.BETTER_AUTH_URL, secret: c.env?.BETTER_AUTH_SECRET });
+      if (!config || !c.env?.DATABASE_URL) return c.json({ error: "Authentication is unavailable." }, 503);
+      try {
+        const status = await readVerificationStatus(c.req.valid("json").token, config.secret, (email) =>
+          useDatabase(c.env.DATABASE_URL, async (db) => {
+            const [account] = await db.select({ emailVerified: user.emailVerified }).from(user).where(eq(user.email, email)).limit(1);
+            return account;
+          }));
+        return c.json({ status });
+      } catch {
+        console.error("Email verification status check failed.");
+        return c.json({ error: "Authentication is unavailable." }, 503);
+      }
+    })
     .all("/api/auth/*", async (c) => {
       const config = readAuthConfig({
         baseURL: c.env?.BETTER_AUTH_URL,
@@ -45,7 +69,8 @@ export function createApp(useDatabase: typeof withDatabase, useEmailSender = cre
           verificationRequired = typeof body === "object" && body !== null
             && "code" in body && body.code === "EMAIL_NOT_VERIFIED";
         }
-        if (response.ok || verificationRequired) {
+        const verificationRedirect = response.status === 302 && c.req.path === "/api/auth/verify-email";
+        if (response.ok || verificationRequired || verificationRedirect) {
           let waitUntil: ((promise: Promise<unknown>) => void) | undefined;
           try { waitUntil = c.executionCtx.waitUntil.bind(c.executionCtx); }
           catch { /* Node hosts await delivery below; Workers owns its task lifetime. */ }
