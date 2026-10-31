@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router";
+import AppLayout from "./layout";
 import { RequireAccount } from "../features/auth/components/require-account";
 import AuthLayout from "../routes/auth-layout";
 import ForgotPasswordPage from "../routes/forgot-password/page";
@@ -41,7 +42,7 @@ import AdminCertificatePage from "../routes/admin/certificates/[certificateId]/p
 import AdminOrdersPage from "../routes/admin/orders/page";
 import AdminOrderPage from "../routes/admin/orders/[orderId]/page";
 
-export const appRoutes: RouteObject[] = [
+const pageRoutes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
@@ -110,4 +111,8 @@ export const appRoutes: RouteObject[] = [
       },
     ],
   },
+];
+
+export const appRoutes: RouteObject[] = [
+  { element: <AppLayout />, children: pageRoutes },
 ];

@@ -95,6 +95,13 @@ Use React Hook Form with `zodResolver` from `@hookform/resolvers/zod`.
 Register standard inputs directly; use `Controller` for Select and MultiSelect.
 Keep labels, `required`, autocomplete, and error display on inputs.
 
+## Navigation progress
+
+`src/react-app/app/layout.tsx` mounts one Mantine progress bar for all routes.
+It tracks pending router navigation and initial queries with mounted consumers,
+starting after 150 ms. Cached-data refreshes and unobserved prefetches stay quiet.
+Pages using TanStack Query need no separate progress-bar setup.
+
 ## Testing + Verification
 
 
