@@ -1,11 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import { EMAIL_VERIFICATION_EXPIRES_IN_SECONDS } from "../../shared/constants/auth";
+import { EMAIL_VERIFICATION_EXPIRES_IN_SECONDS, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../shared/constants/auth";
 import { displayNameInputSchema, emailSchema } from "../../shared/contracts/auth";
 import type { Database } from "../db/client";
 import * as authSchema from "../db/schema/auth";
-import { authOptions } from "./options";
 import { emailChangePageURL, sendAuthEmail, verificationPageURL, type AuthEmailDelivery } from "../email/auth";
 import { readVerificationClaims } from "./verification-status";
 
@@ -28,12 +27,23 @@ export function readAuthConfig(values: Partial<AuthConfig>): AuthConfig | null {
   }
 }
 
+/*
+TODO:
+- multiple base URLs if needed
+- secondary storage (e.g. Cloudflare KV, if useful)
+- OAuth social providers
+- plugins that are useful
+- rate limiting
+*/
+
 export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDelivery) {
   const validated = readAuthConfig(config);
   if (!validated) throw new Error("Invalid authentication configuration.");
 
   return betterAuth({
-    ...authOptions,
+    appName: "FANS",
+    basePath: "/api/auth",
+    logger: { level: "error" },
     baseURL: validated.baseURL,
     secret: validated.secret,
     trustedOrigins: [validated.baseURL],
@@ -54,9 +64,13 @@ export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDel
       }),
     },
     user: {
-      ...authOptions.user,
+      additionalFields: {
+        platformRole: { type: "string", defaultValue: "user", input: false },
+        status: { type: "string", defaultValue: "active", input: false },
+      },
       changeEmail: {
-        ...authOptions.user.changeEmail,
+        enabled: true,
+        updateEmailWithoutVerification: false,
         sendChangeEmailConfirmation: async ({ user, newEmail, token }) => {
           await sendAuthEmail(email, "emailChangeConfirmation", user.email, emailChangePageURL(validated.baseURL, token), newEmail);
         },
@@ -83,10 +97,23 @@ export function createAuth(db: Database, config: AuthConfig, email: AuthEmailDel
       },
     },
     emailAndPassword: {
-      ...authOptions.emailAndPassword,
+      enabled: true,
+      requireEmailVerification: true,
+      autoSignIn: false,
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail(email, "passwordReset", user.email, url);
       },
+    },
+    // Read sessions from the database so revocation is effective immediately.
+    session: { cookieCache: { enabled: false } },
+    advanced: {
+      // Better Auth otherwise skips origin checks in test environments.
+      disableOriginCheck: false,
+      disableCSRFCheck: false,
+      database: { generateId: false },
     },
     database: drizzleAdapter(db, {
       provider: "pg",
