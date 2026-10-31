@@ -102,6 +102,23 @@ It tracks pending router navigation and initial queries with mounted consumers,
 starting after 150 ms. Cached-data refreshes and unobserved prefetches stay quiet.
 Pages using TanStack Query need no separate progress-bar setup.
 
+## Route loading
+
+Keep shared layouts, guards, the homepage, and small catalog pages eager.
+`app/routes.tsx` assembles the route groups under the shared root layout:
+
+- `app/routes/public.tsx`: public pages and lazy auth forms.
+- `app/routes/account.tsx`: account guard, lazy dashboard, and checkout.
+- `app/routes/admin.tsx`: admin guard and lazy admin pages.
+
+Import these route definitions statically. Use
+`lazy: lazyPage(() => import("…/page"))` inside each group; the helper maps a
+page's default export to React Router's `Component` property. Keep paths and
+children in the static route tree.
+The root provides initial loading and page-error recovery UI. In-app lazy
+navigation uses the shared progress bar. Vite generates the chunks without
+custom chunk configuration. Global Mantine CSS remains loaded at startup.
+
 ## Testing + Verification
 
 

@@ -1,6 +1,6 @@
 import { QueryClient, useQuery } from "@tanstack/react-query";
 import { act, cleanup, screen, waitFor } from "@testing-library/react";
-import { StrictMode } from "react";
+import { StrictMode, type ReactElement } from "react";
 import { createMemoryRouter, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,11 +37,11 @@ afterEach(() => {
 const delay = () => new Promise<void>((resolve) => setTimeout(resolve, 200));
 
 describe("shared navigation progress", () => {
-  it("starts for a pending route loader and completes after the destination loads", async () => {
-    const pending = deferred<null>();
+  it("starts for a pending lazy route and completes after the destination loads", async () => {
+    const pending = deferred<{ Component: () => ReactElement }>();
     const { router } = mount([
       { path: "/", element: <p>Home</p> },
-      { path: "/next", loader: () => pending.promise, element: <p>Destination</p> },
+      { path: "/next", lazy: () => pending.promise },
     ]);
     expect(screen.getAllByTestId("navigation-progress")).toHaveLength(1);
     expect(progress.start).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe("shared navigation progress", () => {
     await act(async () => { navigation = router.navigate("/next"); });
     await waitFor(() => expect(progress.start).toHaveBeenCalledOnce());
     expect(progress.complete).not.toHaveBeenCalled();
-    await act(async () => { pending.resolve(null); await navigation; });
+    await act(async () => { pending.resolve({ Component: () => <p>Destination</p> }); await navigation; });
     expect(await screen.findByText("Destination")).toBeInTheDocument();
     await waitFor(() => expect(progress.complete).toHaveBeenCalledOnce());
   });

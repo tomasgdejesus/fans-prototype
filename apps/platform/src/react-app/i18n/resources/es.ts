@@ -28,6 +28,7 @@ export const es = {
     },
     navigation: {
       main: "Principal",
+      loading: "Cargando página…",
     },
     placeholder: {
       comingSoon: "Próximamente",
@@ -67,6 +68,11 @@ export const es = {
     },
   },
   errors: {
+    route: {
+      title: "No se pudo cargar esta página",
+      description: "Comprueba tu conexión y vuelve a cargar la página o regresa al inicio.",
+      reload: "Volver a cargar",
+    },
     notFound: {
       title: "Página no encontrada",
       description: "No se pudo encontrar la página solicitada.",

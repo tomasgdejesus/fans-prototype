@@ -29,6 +29,7 @@ export const en = {
     },
     navigation: {
       main: "Main",
+      loading: "Loading page…",
     },
     placeholder: {
       comingSoon: "Coming soon",
@@ -68,6 +69,11 @@ export const en = {
     },
   },
   errors: {
+    route: {
+      title: "Unable to load this page",
+      description: "Check your connection, then reload the page or return home.",
+      reload: "Reload page",
+    },
     notFound: {
       title: "Page not found",
       description: "The page you requested could not be found.",

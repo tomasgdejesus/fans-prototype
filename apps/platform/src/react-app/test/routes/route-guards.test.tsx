@@ -42,7 +42,7 @@ describe("application route guards", () => {
     let resolveSession!: (value: PublicSession | null) => void;
     vi.mocked(authClient.getSession).mockReturnValue(new Promise((resolve) => { resolveSession = resolve; }));
     renderRoute("/dashboard/orders/order-1");
-    expect(screen.getByRole("status")).toHaveTextContent("Checking your session");
+    expect(await screen.findByText("Checking your session…")).toHaveAttribute("role", "status");
     expect(screen.queryByRole("heading", { name: "Order details" })).not.toBeInTheDocument();
     await act(async () => { resolveSession(active); });
     expect(await screen.findByRole("heading", { name: "Order details" })).toBeInTheDocument();
