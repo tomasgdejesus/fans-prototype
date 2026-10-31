@@ -3,19 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sdk = vi.hoisted(() => ({
   getSession: vi.fn(), signIn: { email: vi.fn() }, signUp: { email: vi.fn() },
   signOut: vi.fn(), requestPasswordReset: vi.fn(), resetPassword: vi.fn(),
-  verifyEmail: vi.fn(), sendVerificationEmail: vi.fn(),
+  verifyEmail: vi.fn(), sendVerificationEmail: vi.fn(), updateUser: vi.fn(), changeEmail: vi.fn(),
 }));
 const statusRequest = vi.hoisted(() => vi.fn());
+const emailChangeStatusRequest = vi.hoisted(() => vi.fn());
 vi.mock("better-auth/client", () => ({ createAuthClient: vi.fn(() => sdk) }));
-vi.mock("../../../lib/api-client", () => ({ apiClient: { api: { auth: { "verification-status": { $post: statusRequest } } } } }));
+vi.mock("../../../lib/api-client", () => ({ apiClient: { api: { auth: { "verification-status": { $post: statusRequest }, "email-change-status": { $post: emailChangeStatusRequest } } } } }));
 
 import { createAuthClient } from "better-auth/client";
 import { authClient } from "../../../lib/auth-client";
 
 beforeEach(() => {
   for (const method of [sdk.getSession, sdk.signIn.email, sdk.signUp.email, sdk.signOut,
-    sdk.requestPasswordReset, sdk.resetPassword, sdk.verifyEmail, sdk.sendVerificationEmail]) method.mockReset();
+    sdk.requestPasswordReset, sdk.resetPassword, sdk.verifyEmail, sdk.sendVerificationEmail, sdk.updateUser, sdk.changeEmail]) method.mockReset();
   statusRequest.mockReset();
+  emailChangeStatusRequest.mockReset();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -39,11 +41,11 @@ describe("Better Auth frontend adapter", () => {
 
   it("uses server-owned role and account status in session results", async () => {
     sdk.getSession.mockResolvedValue({ error: null, data: { user: {
-      id: "user-1", platformRole: "admin", status: "suspended", emailVerified: true,
+      id: "user-1", name: "FANS user", email: "learner@example.com", platformRole: "admin", status: "suspended", emailVerified: true,
     } } });
     const signal = new AbortController().signal;
     expect(await authClient.getSession(signal)).toEqual({
-      userId: "user-1", platformRole: "admin", status: "suspended", emailVerified: true,
+      userId: "user-1", name: "FANS user", email: "learner@example.com", platformRole: "admin", status: "suspended", emailVerified: true,
     });
     expect(sdk.getSession).toHaveBeenCalledWith({ fetchOptions: { signal } });
   });
@@ -99,6 +101,26 @@ describe("Better Auth frontend adapter", () => {
   it("does not turn a failed status lookup into a pending verification", async () => {
     statusRequest.mockResolvedValue(new Response(null, { status: 503 }));
     await expect(authClient.getVerificationStatus("signed-token")).rejects.toThrow("Verification status check failed.");
+  });
+
+  it("uses native profile and email-change actions without altering the current session", async () => {
+    sdk.updateUser.mockResolvedValue({ error: null });
+    sdk.changeEmail.mockResolvedValue({ error: null });
+    expect(await authClient.updateDisplayName({ name: "Tomas" })).toEqual({ ok: true });
+    expect(sdk.updateUser).toHaveBeenCalledExactlyOnceWith({ name: "Tomas" });
+    expect(await authClient.changeEmail({ email: "new@example.com" })).toEqual({ ok: true });
+    expect(sdk.changeEmail).toHaveBeenCalledExactlyOnceWith({ newEmail: "new@example.com" });
+    expect(sdk.getSession).not.toHaveBeenCalled();
+  });
+
+  it("reads the signed email-change purpose without consuming the link", async () => {
+    emailChangeStatusRequest.mockResolvedValue(Response.json({ status: "confirmation" }));
+    const signal = new AbortController().signal;
+    expect(await authClient.getEmailChangeStatus("signed-token", signal)).toBe("confirmation");
+    expect(emailChangeStatusRequest).toHaveBeenCalledExactlyOnceWith({ json: { token: "signed-token" } }, {
+      init: { signal, cache: "no-store", credentials: "same-origin" },
+    });
+    expect(sdk.verifyEmail).not.toHaveBeenCalled();
   });
 
   it("uses Better Auth password-reset and verification payloads", async () => {

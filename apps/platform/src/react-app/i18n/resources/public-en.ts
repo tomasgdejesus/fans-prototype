@@ -31,6 +31,6 @@ export const publicPages = {
     expiredLink: "This link has expired. Request a new link to continue.",
     usedLink: "This link has already been used. Log in or request a new link.",
     requestNew: "Request a new reset link", continueLogin: "Continue to log in",
-    errors: { unavailable: "Account services are currently unavailable. Please try again later.", credentials: "Unable to log in with these details.", verificationRequired: "Verify your email before logging in.", failed: "We could not complete that request. Please try again.", rateLimited: "Too many attempts. Please wait before trying again." },
+    errors: { unavailable: "Account services are currently unavailable. Please try again later.", credentials: "Unable to log in with these details.", verificationRequired: "Verify your email before logging in.", reauthenticationRequired: "Sign out and log in again before making this change.", failed: "We could not complete that request. Please try again.", rateLimited: "Too many attempts. Please wait before trying again." },
   },
 } as const;

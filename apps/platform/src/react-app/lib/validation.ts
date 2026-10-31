@@ -5,6 +5,8 @@ import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../shared/constants
 export function validationMessage(message: string | undefined, t: TFunction): string | undefined {
   if (!message) return undefined;
   switch (message) {
+    case "validation.nameTooLong":
+    case "validation.emailUnchanged":
     case "validation.required":
     case "validation.invalidEmail":
     case "validation.passwordTooShort":

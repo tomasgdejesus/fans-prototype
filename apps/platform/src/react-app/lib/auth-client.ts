@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/client";
 import { inferAdditionalFields } from "better-auth/client/plugins";
-import type { EmailInput, EmailVerificationStatus, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
+import type { DisplayNameInput, EmailChangeStatus, EmailInput, EmailVerificationStatus, LoginInput, RegistrationInput, ResetPasswordInput } from "../../shared/contracts/auth";
 import type { Auth } from "../../worker/auth";
 import type { AuthSession } from "../../worker/env";
 import { apiClient } from "./api-client";
@@ -14,8 +14,8 @@ const betterAuthClient = createAuthClient({
   fetchOptions: { credentials: "same-origin", cache: "no-store" },
 });
 
-export type PublicSession = { userId: string } & Pick<AuthSession["user"], "platformRole" | "status" | "emailVerified">;
-export type AuthFailure = "unavailable" | "credentials" | "verificationRequired" | "failed" | "rateLimited" | "invalidLink" | "expiredLink" | "usedLink";
+export type PublicSession = { userId: string } & Pick<AuthSession["user"], "name" | "email" | "platformRole" | "status" | "emailVerified">;
+export type AuthFailure = "unavailable" | "credentials" | "verificationRequired" | "reauthenticationRequired" | "failed" | "rateLimited" | "invalidLink" | "expiredLink" | "usedLink";
 export type AuthResult = { ok: true } | { ok: false; reason: AuthFailure };
 export type EmailRequestResult = { ok: true } | { ok: false; reason: "unavailable" | "failed" | "rateLimited" };
 
@@ -29,6 +29,8 @@ function authResult(error: ServiceError | null): AuthResult {
     case "INVALID_EMAIL_OR_PASSWORD":
     case "INVALID_PASSWORD": return { ok: false, reason: "credentials" };
     case "EMAIL_NOT_VERIFIED": return { ok: false, reason: "verificationRequired" };
+    case "SESSION_NOT_FRESH":
+    case "UNAUTHORIZED": return { ok: false, reason: "reauthenticationRequired" };
     case "TOKEN_EXPIRED": return { ok: false, reason: "expiredLink" };
     case "TOKEN_ALREADY_USED": return { ok: false, reason: "usedLink" };
     case "INVALID_TOKEN":
@@ -48,6 +50,9 @@ function emailResult(error: ServiceError | null): EmailRequestResult {
 export interface PublicAuthClient {
   configured: boolean;
   getSession(signal?: AbortSignal): Promise<PublicSession | null>;
+  updateDisplayName(input: DisplayNameInput): Promise<AuthResult>;
+  changeEmail(input: EmailInput): Promise<AuthResult>;
+  getEmailChangeStatus(token: string, signal?: AbortSignal): Promise<EmailChangeStatus>;
   signIn(input: LoginInput, verificationPath?: string): Promise<AuthResult>;
   register(input: RegistrationInput, verificationPath?: string): Promise<AuthResult>;
   signOut(): Promise<AuthResult>;
@@ -66,10 +71,27 @@ export const authClient: PublicAuthClient = {
     if (error) throw new Error("Session check failed.");
     return data?.user.emailVerified ? {
       userId: data.user.id,
+      name: data.user.name,
+      email: data.user.email,
       platformRole: data.user.platformRole,
       status: data.user.status,
       emailVerified: data.user.emailVerified,
     } : null;
+  },
+  async updateDisplayName(input) {
+    const { error } = await betterAuthClient.updateUser(input);
+    return authResult(error);
+  },
+  async changeEmail({ email }) {
+    const { error } = await betterAuthClient.changeEmail({ newEmail: email });
+    return authResult(error);
+  },
+  async getEmailChangeStatus(token, signal) {
+    const response = await apiClient.api.auth["email-change-status"].$post({ json: { token } }, {
+      init: { signal, cache: "no-store", credentials: "same-origin" },
+    });
+    if (response.status !== 200) throw new Error("Email change status check failed.");
+    return (await response.json()).status;
   },
   async signIn(input, verificationPath = "/verify-email") {
     const callbackURL = new URL(verificationPath, window.location.origin).href;

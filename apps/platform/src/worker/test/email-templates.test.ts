@@ -23,3 +23,23 @@ describe("authentication email templates", () => {
     }
   });
 });
+
+
+describe("email-change templates", () => {
+  it("identifies the requested new address in the current-inbox approval email", async () => {
+    const url = "http://localhost:5173/change-email?token=approval-token";
+    const message = await renderAuthEmail("emailChangeConfirmation", "old@example.com", url, "new@example.com");
+    expect(message.subject).toBe("Approve your FANS email change");
+    for (const content of [message.html, message.text]) {
+      expect(content).toContain("new@example.com");
+      expect(content).toContain(url);
+      expect(content).toContain("until the new address is verified");
+    }
+  });
+  it("uses a separate verification message for the new inbox", async () => {
+    const message = await renderAuthEmail("emailChangeVerification", "new@example.com", "http://localhost:5173/change-email?token=verification-token");
+    expect(message.subject).toBe("Verify your new FANS email address");
+    expect(message.text).toContain("complete your FANS account email change");
+    expect(message.text).not.toContain("Welcome to FANS");
+  });
+});

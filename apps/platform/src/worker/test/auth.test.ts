@@ -71,6 +71,31 @@ describe("Better Auth HTTP integration", () => {
     expect(sender).not.toHaveBeenCalled();
   });
 
+  it("inspects a signed email-change token without consuming it or sending mail", async () => {
+    const token = await sign({ email: "learner@example.com", updateTo: "new@example.com", requestType: "change-email-confirmation", exp: Math.floor(Date.now() / 1000) + 3600 }, bindings.BETTER_AUTH_SECRET, "HS256");
+    const limit = vi.fn().mockResolvedValue([{ emailVerified: true }]);
+    const database = { select: () => ({ from: () => ({ where: () => ({ limit }) }) }) } as unknown as Database;
+    const runner: typeof withDatabase = async (_url, run) => run(database);
+    const sender = vi.fn(() => delivery.sendEmail);
+    const response = await createApp(runner, sender).request(`${origin}/api/auth/email-change-status`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }),
+    }, bindings);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ status: "confirmation" });
+    expect(limit).toHaveBeenCalledOnce();
+    expect(sender).not.toHaveBeenCalled();
+  });
+
+  it("rejects a forged email-change token without opening the database", async () => {
+    const response = await app.request(`${origin}/api/auth/email-change-status`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: "forged-token" }),
+    }, bindings);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "invalid" });
+    expect(withDatabase).not.toHaveBeenCalled();
+  });
+
   it("rejects a forged status token without opening the database", async () => {
     const response = await app.request(`${origin}/api/auth/verification-status`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: "forged-token" }),

@@ -7,4 +7,4 @@ export interface EmailMessage {
 
 export type SendEmail = (message: EmailMessage) => Promise<void>;
 export type EmailTask = () => Promise<void>;
-export type AuthEmailKind = "verification" | "passwordReset" | "welcome";
+export type AuthEmailKind = "verification" | "passwordReset" | "welcome" | "emailChangeConfirmation" | "emailChangeVerification";

@@ -117,7 +117,7 @@ describe("public account flows", () => {
   });
 
   it("returns signed-in visitors to their intended checkout", async () => {
-    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: true });
+    vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", name: "FANS user", email: "learner@example.com", platformRole: "user", status: "active", emailVerified: true });
     renderApp(
       <MemoryRouter initialEntries={["/login?returnTo=%2Fcheckout%3FproductId%3Dservsafe-class"]}>
         <Routes>
@@ -143,7 +143,7 @@ describe("public account flows", () => {
 
   it("logs in before continuing to the intended destination", async () => {
     const signIn = vi.spyOn(authClient, "signIn").mockImplementation(async () => {
-      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", platformRole: "user", status: "active", emailVerified: true });
+      vi.mocked(authClient.getSession).mockResolvedValue({ userId: "user-1", name: "FANS user", email: "learner@example.com", platformRole: "user", status: "active", emailVerified: true });
       return { ok: true };
     });
     renderApp(

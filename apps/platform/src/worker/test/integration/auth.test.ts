@@ -27,9 +27,11 @@ const bindings = {
 
 const client = new Client({ connectionString: directUrl, connectionTimeoutMillis: 5_000 });
 let email: string;
+let changedEmail: string | undefined;
 
 type AuthUser = {
   id: string;
+  name: string;
   email: string;
   platformRole: string;
   status: string;
@@ -37,11 +39,11 @@ type AuthUser = {
 };
 
 beforeAll(async () => { await client.connect(); });
-beforeEach(() => { email = `auth-${randomUUID()}@example.invalid`; messages.length = 0; });
+beforeEach(() => { changedEmail = undefined; email = `auth-${randomUUID()}@example.invalid`; messages.length = 0; });
 afterEach(async () => {
   // Auth requests commit through separate connections; delete only this test's
   // unique user. Foreign keys cascade to its accounts and sessions.
-  if (email) await client.query('DELETE FROM "user" WHERE email = $1', [email]);
+  if (email) await client.query('DELETE FROM "user" WHERE email = ANY($1::text[])', [[email, changedEmail].filter(Boolean)]);
 });
 afterAll(async () => { await client.end(); });
 
@@ -219,6 +221,96 @@ describe("Better Auth PostgreSQL integration", () => {
     expect((await post("/sign-in/email", { email, password })).status).toBe(401);
     expect((await post("/sign-in/email", { email, password: newPassword })).status).toBe(200);
     expect((await post("/reset-password", { token, newPassword })).status).toBe(400);
+  });
+
+  it("updates a display name, confirms both inboxes before changing email, and resets the same user's password", async () => {
+    expect((await post("/sign-up/email", { name: "FANS user", email, password })).status).toBe(200);
+    expect((await verifyLink(verificationLink())).status).toBe(200);
+    const login = await post("/sign-in/email", { email, password });
+    expect(login.status).toBe(200);
+    const cookie = cookieHeader(login);
+    const original = (await getSession(cookie))!.user;
+    const { rows: [credential] } = await client.query<{ id: string; account_id: string; password: string }>(
+      'SELECT id, account_id, password FROM account WHERE user_id = $1 AND provider_id = $2', [original.id, "credential"],
+    );
+    expect((await post("/update-user", { name: "  Tomás De Jesús  " }, cookie)).status).toBe(200);
+    expect((await getSession(cookie))?.user.name).toBe("Tomás De Jesús");
+    for (const name of ["   ", "x".repeat(101)]) {
+      expect((await post("/update-user", { name }, cookie)).status).toBe(400);
+    }
+    expect((await post("/update-user", { name: "Unauthorized" })).status).toBe(401);
+    await client.query('UPDATE "user" SET status = $1 WHERE id = $2', ["suspended", original.id]);
+    expect((await post("/update-user", { name: "Blocked" }, cookie)).status).toBe(403);
+    expect((await post("/change-email", { newEmail: "blocked@example.invalid" }, cookie)).status).toBe(403);
+    await client.query('UPDATE "user" SET status = $1 WHERE id = $2', ["active", original.id]);
+    changedEmail = `changed-${randomUUID()}@example.invalid`;
+    expect((await post("/change-email", { newEmail: changedEmail })).status).toBe(401);
+    const before = messages.length;
+    expect((await post("/change-email", { newEmail: changedEmail }, cookie)).status).toBe(200);
+    expect(messages).toHaveLength(before + 1);
+    expect(messages.at(-1)).toMatchObject({ to: email, subject: "Approve your FANS email change" });
+    expect(messages.at(-1)!.text).toContain(changedEmail);
+    const approval = verificationLink();
+    expect(approval.pathname).toBe("/change-email");
+    expect(await verificationStatus(approval)).toEqual({ status: "invalid" });
+    const inspect = await post("/email-change-status", { token: approval.searchParams.get("token") });
+    expect(inspect.headers.get("cache-control")).toBe("no-store");
+    expect(await inspect.json()).toEqual({ status: "confirmation" });
+    expect(messages).toHaveLength(before + 1);
+    expect((await getSession(cookie))?.user.email).toBe(email);
+
+    expect((await verifyLink(approval)).status).toBe(200);
+    expect(messages).toHaveLength(before + 2);
+    expect(messages.at(-1)).toMatchObject({ to: changedEmail, subject: "Verify your new FANS email address" });
+    const verification = verificationLink();
+    expect(verification.pathname).toBe("/change-email");
+    expect((await getSession(cookie))?.user.email).toBe(email);
+    expect(await (await post("/email-change-status", { token: verification.searchParams.get("token") })).json()).toEqual({ status: "verification" });
+
+    const completed = await verifyLink(verification);
+    expect(completed.status).toBe(200);
+    // Email-change verification must not send another signup welcome.
+    expect(messages).toHaveLength(before + 2);
+    expect((await getSession(cookie))?.user).toMatchObject({ id: original.id, name: "Tomás De Jesús", email: changedEmail, emailVerified: true });
+    expect((await getSession(cookieHeader(completed)))?.user.id).toBe(original.id);
+    const { rows: [after] } = await client.query('SELECT id, account_id, password FROM account WHERE user_id = $1 AND provider_id = $2', [original.id, "credential"]);
+    expect(after).toEqual(credential);
+    expect(await (await post("/email-change-status", { token: verification.searchParams.get("token") })).json()).toEqual({ status: "invalid" });
+    expect((await post("/sign-in/email", { email, password })).status).toBe(401);
+    expect((await post("/sign-in/email", { email: changedEmail, password })).status).toBe(200);
+
+    expect((await post("/request-password-reset", { email: changedEmail, redirectTo: `${origin}/reset-password?returnTo=%2Fdashboard%2Fsettings` })).status).toBe(200);
+    expect(messages.at(-1)).toMatchObject({ to: changedEmail, subject: "Reset your FANS password" });
+    const redirect = await app.request(verificationLink().href, {}, bindings);
+    expect(redirect.status).toBe(302);
+    const page = new URL(redirect.headers.get("location")!, origin);
+    expect(page.searchParams.get("returnTo")).toBe("/dashboard/settings");
+    const newPassword = "updated-test-password-123!";
+    expect((await post("/reset-password", { token: page.searchParams.get("token"), newPassword })).status).toBe(200);
+    expect(await getSession(cookie)).toBeNull();
+    expect(await getSession(cookieHeader(completed))).toBeNull();
+    expect((await post("/sign-in/email", { email: changedEmail, password })).status).toBe(401);
+    expect((await post("/sign-in/email", { email: changedEmail, password: newPassword })).status).toBe(200);
+  });
+
+  it("rejects expired email-change approval without changing the address or sending new mail", async () => {
+    expect((await post("/sign-up/email", { name: "FANS user", email, password })).status).toBe(200);
+    expect((await verifyLink(verificationLink())).status).toBe(200);
+    const cookie = cookieHeader(await post("/sign-in/email", { email, password }));
+    changedEmail = `expired-${randomUUID()}@example.invalid`;
+    expect((await post("/change-email", { newEmail: changedEmail }, cookie)).status).toBe(200);
+    const approval = verificationLink();
+    const payload = JSON.parse(Buffer.from(approval.searchParams.get("token")!.split(".")[1], "base64url").toString()) as { exp: number };
+    const before = messages.length;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime((payload.exp + 1) * 1000);
+    try {
+      expect(await (await post("/email-change-status", { token: approval.searchParams.get("token") })).json()).toEqual({ status: "invalid" });
+      expect((await verifyLink(approval)).status).toBe(401);
+      expect(messages).toHaveLength(before);
+      const { rows: [stored] } = await client.query('SELECT email FROM "user" WHERE email = $1', [email]);
+      expect(stored.email).toBe(email);
+    } finally { vi.useRealTimers(); }
   });
 
   it("sends a fresh link on a later unverified login after the original link has expired", async () => {

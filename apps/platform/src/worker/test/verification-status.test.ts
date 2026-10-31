@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { verify } from "hono/jwt";
-import { readVerificationStatus } from "../auth/verification-status";
+import { readEmailChangeStatus, readVerificationStatus } from "../auth/verification-status";
 
 vi.mock("hono/jwt", () => ({ verify: vi.fn() }));
 const claims = { email: "learner@example.com", exp: 2_000_000_000 };
@@ -41,5 +41,41 @@ describe("read-only verification status", () => {
     vi.mocked(verify).mockResolvedValue(claims);
     await expect(readVerificationStatus("signed-token", "secret", async () => { throw new Error("database unavailable"); }))
       .rejects.toThrow("database unavailable");
+  });
+});
+
+
+describe("read-only email-change status", () => {
+  it.each([
+    ["change-email-confirmation", "confirmation"],
+    ["change-email-verification", "verification"],
+  ] as const)("recognizes a signed %s token without mutating the account", async (requestType, status) => {
+    vi.mocked(verify).mockResolvedValue({ ...claims, updateTo: "new@example.com", requestType });
+    const find = vi.fn().mockResolvedValue({ emailVerified: true });
+    expect(await readEmailChangeStatus("signed-token", "secret", find)).toBe(status);
+    expect(find).toHaveBeenCalledExactlyOnceWith(claims.email);
+  });
+
+  it.each([
+    claims, { ...claims, updateTo: "new@example.com" },
+    { ...claims, requestType: "change-email-confirmation" },
+    { ...claims, updateTo: "new@example.com", requestType: "unknown" },
+  ])("rejects signup and incomplete tokens before querying an account", async (payload) => {
+    vi.mocked(verify).mockResolvedValue(payload);
+    const find = vi.fn();
+    expect(await readEmailChangeStatus("signed-token", "secret", find)).toBe("invalid");
+    expect(find).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, { emailVerified: false }])("rejects a missing or unverified source account", async (account) => {
+    vi.mocked(verify).mockResolvedValue({ ...claims, updateTo: "new@example.com", requestType: "change-email-verification" });
+    expect(await readEmailChangeStatus("signed-token", "secret", async () => account)).toBe("invalid");
+  });
+
+  it("rejects an expired or forged email-change token without querying an account", async () => {
+    vi.mocked(verify).mockRejectedValue(new Error("invalid signature"));
+    const find = vi.fn();
+    expect(await readEmailChangeStatus("forged", "secret", find)).toBe("invalid");
+    expect(find).not.toHaveBeenCalled();
   });
 });

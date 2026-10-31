@@ -5,6 +5,12 @@ export interface AuthEmailDelivery {
   enqueue?: (task: EmailTask) => void;
 }
 
+export function emailChangePageURL(baseURL: string, token: string): string {
+  const page = new URL("/change-email", baseURL);
+  page.searchParams.set("token", token);
+  return page.href;
+}
+
 export function verificationPageURL(baseURL: string, token: string, generatedURL: string): string {
   const page = new URL("/verify-email", baseURL);
   page.searchParams.set("token", token);
@@ -25,10 +31,11 @@ export async function sendAuthEmail(
   kind: AuthEmailKind,
   to: string,
   url: string,
+  newEmail?: string,
 ): Promise<void> {
   const task = async () => {
     const { renderAuthEmail } = await import("./templates/auth");
-    await delivery.sendEmail(await renderAuthEmail(kind, to, url));
+    await delivery.sendEmail(await renderAuthEmail(kind, to, url, newEmail));
   };
   if (delivery.enqueue) delivery.enqueue(task);
   else await task();

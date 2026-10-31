@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../../constants/auth";
-import { emailInputSchema, loginInputSchema, registrationInputSchema, resetPasswordInputSchema } from "../../contracts/auth";
+import { displayNameInputSchema, emailInputSchema, loginInputSchema, registrationInputSchema, resetPasswordInputSchema } from "../../contracts/auth";
 
 describe("auth input contracts", () => {
   it("trims email before validation without changing its case", () => {
@@ -63,5 +63,16 @@ describe("auth input contracts", () => {
     }
     expect(registrationInputSchema.safeParse({ email: "learner@example.com", password: 12345678 }).success).toBe(false);
     expect(resetPasswordInputSchema.safeParse({ token: "", password: "example-password" }).success).toBe(false);
+  });
+});
+
+
+describe("display name contract", () => {
+  it("trims names and preserves Unicode", () => {
+    expect(displayNameInputSchema.parse({ name: "  Tomás De Jesús  " })).toEqual({ name: "Tomás De Jesús" });
+    expect(displayNameInputSchema.parse({ name: "x".repeat(100) }).name).toHaveLength(100);
+  });
+  it.each([{ name: "" }, { name: "   " }, { name: "x".repeat(101) }, { name: 7 }, { name: "Tomas", platformRole: "admin" }])("rejects invalid or unexpected profile fields: %o", (input) => {
+    expect(displayNameInputSchema.safeParse(input).success).toBe(false);
   });
 });

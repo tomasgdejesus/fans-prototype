@@ -23,6 +23,7 @@ export const authOptions = {
     revokeSessionsOnPasswordReset: true,
   },
   user: {
+    changeEmail: { enabled: true, updateEmailWithoutVerification: false },
     additionalFields: {
       platformRole: { type: "string", defaultValue: "user", input: false },
       status: { type: "string", defaultValue: "active", input: false },

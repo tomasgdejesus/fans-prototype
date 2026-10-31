@@ -39,7 +39,7 @@ class TestBroadcastChannel {
   }
 }
 
-const active: PublicSession = { userId: "user-1", platformRole: "user", status: "active", emailVerified: true };
+const active: PublicSession = { userId: "user-1", name: "FANS user", email: "learner@example.com", platformRole: "user", status: "active", emailVerified: true };
 const originalBroadcastChannel = globalThis.BroadcastChannel;
 let client: QueryClient;
 

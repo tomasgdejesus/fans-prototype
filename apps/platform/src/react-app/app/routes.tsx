@@ -17,6 +17,7 @@ import PublicLayout from "../routes/public-layout";
 import CatalogPage from "../routes/catalog/page";
 import ProductPage from "../routes/catalog/[productId]/page";
 import VerifyEmailPage from "../routes/verify-email/page";
+import ChangeEmailPage from "../routes/change-email/page";
 import VerifyPage from "../routes/verify/[code]/page";
 import SharedCertificatePage from "../routes/shared/certificates/[token]/page";
 import EnrollmentsPage from "../routes/dashboard/enrollments/page";
@@ -48,6 +49,7 @@ export const appRoutes: RouteObject[] = [
       { path: "/catalog", element: <CatalogPage /> },
       { path: "/catalog/:productId", element: <ProductPage /> },
       { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/change-email", element: <ChangeEmailPage /> },
       { path: "/shared/certificates/:token", element: <SharedCertificatePage /> },
       { path: "/verify/:code", element: <VerifyPage /> },
       {

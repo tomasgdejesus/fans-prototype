@@ -5,7 +5,7 @@ import { verificationStatusInputSchema } from "../shared/contracts/auth";
 import type { WorkerEnv } from "./env";
 import { withDatabase } from "./db/client";
 import { createAuth, readAuthConfig } from "./auth";
-import { readVerificationStatus } from "./auth/verification-status";
+import { readEmailChangeStatus, readVerificationStatus } from "./auth/verification-status";
 import { user } from "./db/schema/auth";
 import { readEmailConfig, type EmailConfig } from "./email/config";
 import { createEmailSender } from "./email";
@@ -32,6 +32,26 @@ export function createApp(useDatabase: typeof withDatabase, useEmailSender = cre
         return c.json({ status });
       } catch {
         console.error("Email verification status check failed.");
+        return c.json({ error: "Authentication is unavailable." }, 503);
+      }
+    })
+    .post("/api/auth/email-change-status", validator("json", (value, c) => {
+      c.header("Cache-Control", "no-store");
+      const parsed = verificationStatusInputSchema.safeParse(value);
+      if (!parsed.success) return c.json({ error: "Invalid verification request." }, 400);
+      return parsed.data;
+    }), async (c) => {
+      const config = readAuthConfig({ baseURL: c.env?.BETTER_AUTH_URL, secret: c.env?.BETTER_AUTH_SECRET });
+      if (!config || !c.env?.DATABASE_URL) return c.json({ error: "Authentication is unavailable." }, 503);
+      try {
+        const status = await readEmailChangeStatus(c.req.valid("json").token, config.secret, (email) =>
+          useDatabase(c.env.DATABASE_URL, async (db) => {
+            const [account] = await db.select({ emailVerified: user.emailVerified }).from(user).where(eq(user.email, email)).limit(1);
+            return account;
+          }));
+        return c.json({ status });
+      } catch {
+        console.error("Email change status check failed.");
         return c.json({ error: "Authentication is unavailable." }, 503);
       }
     })

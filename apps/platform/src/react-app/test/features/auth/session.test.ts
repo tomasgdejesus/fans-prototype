@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { authClient, type PublicSession } from "../../../lib/auth-client";
 import { clearPublicSession, publicSessionKey, publicSessionOptions, refreshPublicSession } from "../../../features/auth/session";
 
-const account = (userId: string): PublicSession => ({ userId, platformRole: "user", status: "active", emailVerified: true });
+const account = (userId: string): PublicSession => ({ userId, name: "FANS user", email: "learner@example.com", platformRole: "user", status: "active", emailVerified: true });
 let client: QueryClient;
 beforeEach(() => {
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
